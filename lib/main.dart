@@ -52,8 +52,9 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       'department': 20.0,
       'stamp': 50.0,
       'signature': 25.0,
-      'date': 25.0, // Nueva fila
+      'date': 25.0,
     },
+    tableBottomOffset: 58.35, // Valor por defecto
   );
 
   Future<void> _pickAndProcessPdf() async {
@@ -123,17 +124,16 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
 
   void _drawFooter(PdfGraphics graphics, Size pageSize, PdfFont font,
       PdfFont boldFont, PdfFont smallFont) {
-    const double cmToPoints = 28.35;
-    const double bottomOffset = 30 + cmToPoints;
     
     final headerRowHeight = _config.rowHeights['header']!;
     final deptRowHeight = _config.rowHeights['department']!;
     final selloRowHeight = _config.rowHeights['stamp']!;
     final firmaRowHeight = _config.rowHeights['signature']!;
-    final dateRowHeight = _config.rowHeights['date']!; // Nueva fila
+    final dateRowHeight = _config.rowHeights['date']!;
+    final bottomOffset = _config.tableBottomOffset; // Usamos el valor configurable
 
     final double footerHeight =
-        headerRowHeight + deptRowHeight + selloRowHeight + firmaRowHeight + dateRowHeight; // Nueva fila
+        headerRowHeight + deptRowHeight + selloRowHeight + firmaRowHeight + dateRowHeight;
     final double footerY = pageSize.height - footerHeight - bottomOffset;
 
     final PdfPen pen = PdfPen(PdfColor(0, 0, 0), width: 0.5);
@@ -154,7 +154,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     graphics.drawLine(pen, Offset(20, currentY + selloRowHeight),
         Offset(20 + footerWidth, currentY + selloRowHeight));
     currentY += selloRowHeight;
-    graphics.drawLine(pen, Offset(20, currentY + firmaRowHeight), // Nueva línea
+    graphics.drawLine(pen, Offset(20, currentY + firmaRowHeight),
         Offset(20 + footerWidth, currentY + firmaRowHeight));
 
     double currentX = 20;
@@ -199,7 +199,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       currentX += colWidth;
     }
 
-    final dateY = firmaY + firmaRowHeight; // Nueva fila
+    final dateY = firmaY + firmaRowHeight;
     currentX = 20;
     for (final dept in _config.departments) {
       final colWidth = footerWidth * (dept['width'] / 100);
