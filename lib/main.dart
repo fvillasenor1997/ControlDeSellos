@@ -45,7 +45,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     });
 
     try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf'],
         withData: true,
@@ -61,13 +61,18 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
         return;
       }
 
-      final Uint8List pdfBytes = result.files.single.bytes!;
+      final pdfBytes = result.files.single.bytes!;
       final newPdf = pw.Document();
-      final existingPdf = await PdfDocument.openData(pdfBytes);
+      final existingPdf = await Printing.convertUserInput(
+        format: PdfPageFormat.a4,
+        bytes: pdfBytes,
+      );
 
-      for (var i = 1; i <= existingPdf.pageCount; i++) {
-        final page = await existingPdf.getPage(i);
-        final pageImage = pw.Image(page.image);
+      final pdfDocument = PdfDocument.openData(existingPdf);
+
+      for (var i = 1; i <= pdfDocument.pageCount; i++) {
+        final page = await pdfDocument.getPage(i);
+        final pageImage = pw.Image(pw.MemoryImage(page.image.bytes));
 
         newPdf.addPage(
           pw.Page(
@@ -177,7 +182,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
                   CircularProgressIndicator(),
                   SizedBox(height: 20),
                   Text("Procesando PDF..."),
-_                ],
+                ],
               ),
             )
           : const Center(
