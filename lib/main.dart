@@ -6,6 +6,7 @@ import 'package:open_file/open_file.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:cross_file/cross_file.dart';
+import 'config_screen.dart'; // Importa la nueva pantalla
 
 void main() {
   runApp(const MyApp());
@@ -37,6 +38,7 @@ class PdfProcessingScreen extends StatefulWidget {
 class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
   bool _isLoading = false;
   bool _isDragOver = false;
+  List<String> _departments = ['METALURGIA', 'ALMACEN', 'CALIDAD', 'PRODUCCION'];
 
   Future<void> _pickAndProcessPdf() async {
     final result = await FilePicker.platform.pickFiles(
@@ -118,10 +120,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     final PdfPen pen = PdfPen(PdfColor(0, 0, 0), width: 0.5);
     final double footerWidth = pageSize.width - 40;
 
-    final double col1Width = footerWidth * 0.49;
-    final double col2Width = footerWidth * 0.17;
-    final double col3Width = footerWidth * 0.17;
-    final double col4Width = footerWidth * 0.17;
+    final double colWidth = footerWidth / _departments.length;
 
     graphics.drawRectangle(
       pen: pen,
@@ -138,68 +137,39 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     graphics.drawLine(pen, Offset(20, currentY + selloRowHeight),
         Offset(20 + footerWidth, currentY + selloRowHeight));
 
-    double currentX = 20;
-    currentX += col1Width;
-    graphics.drawLine(pen, Offset(currentX, footerY + headerRowHeight),
-        Offset(currentX, footerY + footerHeight));
-    currentX += col2Width;
-    graphics.drawLine(pen, Offset(currentX, footerY + headerRowHeight),
-        Offset(currentX, footerY + footerHeight));
-    currentX += col3Width;
-    graphics.drawLine(pen, Offset(currentX, footerY + headerRowHeight),
-        Offset(currentX, footerY + footerHeight));
+    for (int i = 1; i < _departments.length; i++) {
+      double x = 20 + (i * colWidth);
+      graphics.drawLine(pen, Offset(x, footerY + headerRowHeight),
+          Offset(x, footerY + footerHeight));
+    }
 
     _drawCellText(graphics, 'DEPARTAMENTOS', boldFont, 20, footerWidth, footerY,
         headerRowHeight);
     
-    currentX = 20;
-    _drawCellText(graphics, 'METALURGIA', font, currentX, col1Width,
-        footerY + headerRowHeight, deptRowHeight);
-    currentX += col1Width;
-    _drawCellText(graphics, 'ALMACEN', font, currentX, col2Width,
-        footerY + headerRowHeight, deptRowHeight);
-    currentX += col2Width;
-    _drawCellText(graphics, 'CALIDAD', font, currentX, col3Width,
-        footerY + headerRowHeight, deptRowHeight);
-    currentX += col3Width;
-    _drawCellText(graphics, 'PRODUCCION', font, currentX, col4Width,
-        footerY + headerRowHeight, deptRowHeight);
+    double currentX = 20;
+    for (String dept in _departments) {
+      _drawCellText(graphics, dept, font, currentX, colWidth,
+          footerY + headerRowHeight, deptRowHeight);
+      currentX += colWidth;
+    }
 
     final selloY = footerY + headerRowHeight + deptRowHeight;
     currentX = 20;
-    _drawCellText(
-        graphics, 'SELLO', smallFont, currentX, col1Width, selloY, selloRowHeight, 
-        alignment: PdfTextAlignment.left, vAlignment: PdfVerticalAlignment.top);
-    currentX += col1Width;
-     _drawCellText(
-        graphics, 'SELLO', smallFont, currentX, col2Width, selloY, selloRowHeight, 
-        alignment: PdfTextAlignment.left, vAlignment: PdfVerticalAlignment.top);
-    currentX += col2Width;
-     _drawCellText(
-        graphics, 'SELLO', smallFont, currentX, col3Width, selloY, selloRowHeight, 
-        alignment: PdfTextAlignment.left, vAlignment: PdfVerticalAlignment.top);
-    currentX += col3Width;
-     _drawCellText(
-        graphics, 'SELLO', smallFont, currentX, col4Width, selloY, selloRowHeight, 
-        alignment: PdfTextAlignment.left, vAlignment: PdfVerticalAlignment.top);
+    for (int i = 0; i < _departments.length; i++) {
+      _drawCellText(
+          graphics, 'SELLO', smallFont, currentX, colWidth, selloY, selloRowHeight, 
+          alignment: PdfTextAlignment.left, vAlignment: PdfVerticalAlignment.top);
+      currentX += colWidth;
+    }
 
     final firmaY = selloY + selloRowHeight;
     currentX = 20;
-    _drawCellText(
-        graphics, 'FIRMA', smallFont, currentX, col1Width, firmaY, firmaRowHeight, 
-        alignment: PdfTextAlignment.left, vAlignment: PdfVerticalAlignment.top);
-    currentX += col1Width;
-    _drawCellText(
-        graphics, 'FIRMA', smallFont, currentX, col2Width, firmaY, firmaRowHeight, 
-        alignment: PdfTextAlignment.left, vAlignment: PdfVerticalAlignment.top);
-    currentX += col2Width;
-    _drawCellText(
-        graphics, 'FIRMA', smallFont, currentX, col3Width, firmaY, firmaRowHeight, 
-        alignment: PdfTextAlignment.left, vAlignment: PdfVerticalAlignment.top);
-    currentX += col3Width;
-    _drawCellText(
-        graphics, 'FIRMA', smallFont, currentX, col4Width, firmaY, firmaRowHeight, 
-        alignment: PdfTextAlignment.left, vAlignment: PdfVerticalAlignment.top);
+    for (int i = 0; i < _departments.length; i++) {
+      _drawCellText(
+          graphics, 'FIRMA', smallFont, currentX, colWidth, firmaY, firmaRowHeight, 
+          alignment: PdfTextAlignment.left, vAlignment: PdfVerticalAlignment.top);
+      currentX += colWidth;
+    }
   }
 
   void _drawCellText(PdfGraphics graphics, String text, PdfFont font,
@@ -225,11 +195,31 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
             lineAlignment: vAlignment));
   }
 
+  void _openConfigScreen() async {
+    final result = await Navigator.of(context).push<List<String>>(
+      MaterialPageRoute(
+        builder: (context) => ConfigScreen(initialDepartments: _departments),
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        _departments = result;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Agregar Pie de Página a PDF'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: _openConfigScreen,
+          ),
+        ],
       ),
       body: DropTarget(
         onDragDone: (details) {
