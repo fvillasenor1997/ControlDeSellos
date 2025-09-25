@@ -102,60 +102,78 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
   }
   
   void _drawFooter(PdfGraphics graphics, Size pageSize, PdfFont font, PdfFont boldFont) {
-    const double footerHeight = 70;
-    final PdfPen pen = PdfPen(PdfColor(0, 0, 0), width: 0.5);
+    // --- AJUSTES DE DISEÑO ---
+    const double bottomOffset = 30; // Sube todo el cuadro
+    const double headerRowHeight = 20;
+    const double deptRowHeight = 20;
+    const double selloRowHeight = 50; // Doble de alto
+    const double firmaRowHeight = 25;
+    const double footerHeight = headerRowHeight + deptRowHeight + selloRowHeight + firmaRowHeight;
+    const double footerY = pageSize.height - footerHeight - bottomOffset;
+    // --- FIN DE AJUSTES ---
 
+    final PdfPen pen = PdfPen(PdfColor(0, 0, 0), width: 0.5);
+    final double footerWidth = pageSize.width - 40;
+    
     // Dibuja el rectángulo contenedor
     graphics.drawRectangle(
       pen: pen,
-      bounds: Rect.fromLTWH(20, pageSize.height - footerHeight, pageSize.width - 40, footerHeight),
+      bounds: Rect.fromLTWH(20, footerY, footerWidth, footerHeight),
     );
-
-    // Dibuja las líneas verticales de la tabla
-    final double colWidth = (pageSize.width - 40) / 4;
+    
+    // Líneas horizontales
+    double currentY = footerY;
+    graphics.drawLine(pen, Offset(20, currentY + headerRowHeight), Offset(20 + footerWidth, currentY + headerRowHeight));
+    currentY += headerRowHeight;
+    graphics.drawLine(pen, Offset(20, currentY + deptRowHeight), Offset(20 + footerWidth, currentY + deptRowHeight));
+    currentY += deptRowHeight;
+    graphics.drawLine(pen, Offset(20, currentY + selloRowHeight), Offset(20 + footerWidth, currentY + selloRowHeight));
+    
+    // Líneas verticales
+    final double colWidth = footerWidth / 4;
     for (int i = 1; i < 4; i++) {
       graphics.drawLine(
         pen,
-        Offset(20 + (colWidth * i), pageSize.height - footerHeight + 20),
-        Offset(20 + (colWidth * i), pageSize.height),
+        Offset(20 + (colWidth * i), footerY + headerRowHeight),
+        Offset(20 + (colWidth * i), footerY + footerHeight),
       );
     }
     
-    // Dibuja las líneas horizontales de la tabla
-    graphics.drawLine(pen, Offset(20, pageSize.height - footerHeight + 20), Offset(pageSize.width - 20, pageSize.height - footerHeight + 20));
-    graphics.drawLine(pen, Offset(20, pageSize.height - 25), Offset(pageSize.width - 20, pageSize.height - 25));
+    // --- DIBUJAR TEXTO ---
+    // Fila del Título
+    _drawCellText(graphics, 'DEPARTAMENTOS', boldFont, 0, colWidth * 4, footerY, headerRowHeight);
 
-    // Dibuja el texto
-    graphics.drawString(
-      'DEPARTAMENTOS', boldFont,
-      bounds: Rect.fromLTWH(0, pageSize.height - footerHeight + 5, pageSize.width, 20),
-      format: PdfStringFormat(alignment: PdfTextAlignment.center)
-    );
-    
-    _drawCellText(graphics, 'METALURGIA', font, 0, colWidth, pageSize);
-    _drawCellText(graphics, 'ALMACEN', font, 1, colWidth, pageSize);
-    _drawCellText(graphics, 'CALIDAD', font, 2, colWidth, pageSize);
-    _drawCellText(graphics, 'PRODUCCION', font, 3, colWidth, pageSize);
+    // Fila de Nombres de Departamentos
+    _drawCellText(graphics, 'METALURGIA', font, 0, colWidth, footerY + headerRowHeight, deptRowHeight);
+    _drawCellText(graphics, 'ALMACEN', font, 1, colWidth, footerY + headerRowHeight, deptRowHeight);
+    _drawCellText(graphics, 'CALIDAD', font, 2, colWidth, footerY + headerRowHeight, deptRowHeight);
+    _drawCellText(graphics, 'PRODUCCION', font, 3, colWidth, footerY + headerRowHeight, deptRowHeight);
 
-    _drawCellText(graphics, 'SELLO', font, 0, colWidth, pageSize, offset: 20);
-    _drawCellText(graphics, 'SELLO', font, 1, colWidth, pageSize, offset: 20);
-    _drawCellText(graphics, 'SELLO', font, 2, colWidth, pageSize, offset: 20);
-    _drawCellText(graphics, 'SELLO', font, 3, colWidth, pageSize, offset: 20);
+    // Fila de Sello
+    final selloY = footerY + headerRowHeight + deptRowHeight;
+    _drawCellText(graphics, 'SELLO', font, 0, colWidth, selloY, selloRowHeight);
+    _drawCellText(graphics, 'SELLO', font, 1, colWidth, selloY, selloRowHeight);
+    _drawCellText(graphics, 'SELLO', font, 2, colWidth, selloY, selloRowHeight);
+    _drawCellText(graphics, 'SELLO', font, 3, colWidth, selloY, selloRowHeight);
     
-    _drawCellText(graphics, 'FIRMA', font, 0, colWidth, pageSize, offset: 50);
-    _drawCellText(graphics, 'FIRMA', font, 1, colWidth, pageSize, offset: 50);
-    _drawCellText(graphics, 'FIRMA', font, 2, colWidth, pageSize, offset: 50);
-    _drawCellText(graphics, 'FIRMA', font, 3, colWidth, pageSize, offset: 50);
+    // Fila de Firma
+    final firmaY = selloY + selloRowHeight;
+    _drawCellText(graphics, 'FIRMA', font, 0, colWidth, firmaY, firmaRowHeight);
+    _drawCellText(graphics, 'FIRMA', font, 1, colWidth, firmaY, firmaRowHeight);
+    _drawCellText(graphics, 'FIRMA', font, 2, colWidth, firmaY, firmaRowHeight);
+    _drawCellText(graphics, 'FIRMA', font, 3, colWidth, firmaY, firmaRowHeight);
   }
 
-  void _drawCellText(PdfGraphics graphics, String text, PdfFont font, int colIndex, double colWidth, Size pageSize, {double offset = 0}) {
+  void _drawCellText(PdfGraphics graphics, String text, PdfFont font, int colIndex, double cellWidth, double cellY, double cellHeight) {
      graphics.drawString(
       text, font,
-      bounds: Rect.fromLTWH(20 + (colWidth * colIndex), pageSize.height - 50 + offset, colWidth, 15),
+      bounds: Rect.fromLTWH(20 + (colWidth * colIndex), cellY, cellWidth, cellHeight),
       format: PdfStringFormat(alignment: PdfTextAlignment.center, lineAlignment: PdfVerticalAlignment.middle)
     );
   }
 
+  // Variable auxiliar para el ancho de columna
+  double get colWidth => (595.27 - 40) / 4; // Ancho A4 - márgenes
 
   @override
   Widget build(BuildContext context) {
