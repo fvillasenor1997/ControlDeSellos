@@ -63,13 +63,14 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       final PdfFont font = PdfStandardFont(PdfFontFamily.helvetica, 9);
       final PdfFont boldFont =
           PdfStandardFont(PdfFontFamily.helvetica, 10, style: PdfFontStyle.bold);
+      final PdfFont smallFont = PdfStandardFont(PdfFontFamily.helvetica, 6);
 
       // Iterar sobre páginas
       for (int i = 0; i < document.pages.count; i++) {
         final PdfPage page = document.pages[i];
         final PdfGraphics graphics = page.graphics;
 
-        _drawFooter(graphics, page.getClientSize(), font, boldFont);
+        _drawFooter(graphics, page.getClientSize(), font, boldFont, smallFont);
       }
 
       // Guardar el documento modificado
@@ -101,9 +102,10 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     }
   }
 
-  void _drawFooter(
-      PdfGraphics graphics, Size pageSize, PdfFont font, PdfFont boldFont) {
-    const double bottomOffset = 30;
+  void _drawFooter(PdfGraphics graphics, Size pageSize, PdfFont font,
+      PdfFont boldFont, PdfFont smallFont) {
+    const double cmToPoints = 28.35;
+    const double bottomOffset = 30 + cmToPoints; // Subir la tabla 1 cm
     const double headerRowHeight = 20;
     const double deptRowHeight = 20;
     const double selloRowHeight = 50;
@@ -157,23 +159,28 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     final selloY = footerY + headerRowHeight + deptRowHeight;
     for (int i = 0; i < 4; i++) {
       _drawCellText(
-          graphics, 'SELLO', font, i, colWidth, selloY, selloRowHeight);
+          graphics, 'SELLO', smallFont, i, colWidth, selloY, selloRowHeight, alignment: PdfTextAlignment.left);
     }
 
     final firmaY = selloY + selloRowHeight;
     for (int i = 0; i < 4; i++) {
       _drawCellText(
-          graphics, 'FIRMA', font, i, colWidth, firmaY, firmaRowHeight);
+          graphics, 'FIRMA', smallFont, i, colWidth, firmaY, firmaRowHeight, alignment: PdfTextAlignment.left);
     }
   }
 
   void _drawCellText(PdfGraphics graphics, String text, PdfFont font,
-      int colIndex, double cellWidth, double cellY, double cellHeight) {
+      int colIndex, double cellWidth, double cellY, double cellHeight, {PdfTextAlignment alignment = PdfTextAlignment.center}) {
+        double padding = 2;
+        double xPosition = 20 + (colWidth * colIndex);
+        if (alignment == PdfTextAlignment.left) {
+          xPosition += padding;
+        }
     graphics.drawString(text, font,
-        bounds: Rect.fromLTWH(20 + (colWidth * colIndex), cellY, cellWidth,
+        bounds: Rect.fromLTWH(xPosition, cellY, cellWidth,
             cellHeight),
         format: PdfStringFormat(
-            alignment: PdfTextAlignment.center,
+            alignment: alignment,
             lineAlignment: PdfVerticalAlignment.middle));
   }
 
