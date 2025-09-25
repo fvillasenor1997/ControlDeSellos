@@ -1,5 +1,3 @@
-// lib/main.dart
-
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
@@ -61,17 +59,16 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       // Cargar el documento PDF existente
       final PdfDocument document = PdfDocument(inputBytes: pdfBytes);
 
-      // Crear la fuente para el texto del pie de página
+      // Crear las fuentes
       final PdfFont font = PdfStandardFont(PdfFontFamily.helvetica, 9);
       final PdfFont boldFont =
           PdfStandardFont(PdfFontFamily.helvetica, 10, style: PdfFontStyle.bold);
 
-      // Iterar sobre cada página y agregar el pie de página
+      // Iterar sobre páginas
       for (int i = 0; i < document.pages.count; i++) {
         final PdfPage page = document.pages[i];
         final PdfGraphics graphics = page.graphics;
 
-        // Dibujar el pie de página
         _drawFooter(graphics, page.getClientSize(), font, boldFont);
       }
 
@@ -79,9 +76,12 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       final List<int> newPdfBytes = await document.save();
       document.dispose();
 
-      // Guardar y abrir el archivo para previsualizar
+      // Guardar y abrir archivo con sufijo _SELLADO
       final directory = await getApplicationDocumentsDirectory();
-      final path = '${directory.path}/controldesellos_modificado.pdf';
+      final originalName = filePath.split(Platform.pathSeparator).last;
+      final newName = originalName.replaceAll('.pdf', '_SELLADO.pdf');
+      final path = '${directory.path}/$newName';
+
       final file = File(path);
       await file.writeAsBytes(newPdfBytes);
 
@@ -103,21 +103,19 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
 
   void _drawFooter(
       PdfGraphics graphics, Size pageSize, PdfFont font, PdfFont boldFont) {
-    // --- AJUSTES DE DISEÑO ---
-    const double bottomOffset = 30; // Sube todo el cuadro
+    const double bottomOffset = 30;
     const double headerRowHeight = 20;
     const double deptRowHeight = 20;
-    const double selloRowHeight = 50; // Doble de alto
+    const double selloRowHeight = 50;
     const double firmaRowHeight = 25;
     const double footerHeight =
         headerRowHeight + deptRowHeight + selloRowHeight + firmaRowHeight;
-    const double footerY = pageSize.height - footerHeight - bottomOffset;
-    // --- FIN DE AJUSTES ---
+    final double footerY = pageSize.height - footerHeight - bottomOffset;
 
     final PdfPen pen = PdfPen(PdfColor(0, 0, 0), width: 0.5);
     final double footerWidth = pageSize.width - 40;
 
-    // Dibuja el rectángulo contenedor
+    // Rectángulo
     graphics.drawRectangle(
       pen: pen,
       bounds: Rect.fromLTWH(20, footerY, footerWidth, footerHeight),
@@ -144,12 +142,9 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       );
     }
 
-    // --- DIBUJAR TEXTO ---
-    // Fila del Título
-    _drawCellText(
-        graphics, 'DEPARTAMENTOS', boldFont, 0, colWidth * 4, footerY, headerRowHeight);
-
-    // Fila de Nombres de Departamentos
+    // Texto
+    _drawCellText(graphics, 'DEPARTAMENTOS', boldFont, 0, colWidth * 4, footerY,
+        headerRowHeight);
     _drawCellText(graphics, 'METALURGIA', font, 0, colWidth,
         footerY + headerRowHeight, deptRowHeight);
     _drawCellText(graphics, 'ALMACEN', font, 1, colWidth,
@@ -159,37 +154,30 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     _drawCellText(graphics, 'PRODUCCION', font, 3, colWidth,
         footerY + headerRowHeight, deptRowHeight);
 
-    // Fila de Sello
     final selloY = footerY + headerRowHeight + deptRowHeight;
-    _drawCellText(graphics, 'SELLO', font, 0, colWidth, selloY, selloRowHeight);
-    _drawCellText(graphics, 'SELLO', font, 1, colWidth, selloY, selloRowHeight);
-    _drawCellText(graphics, 'SELLO', font, 2, colWidth, selloY, selloRowHeight);
-    _drawCellText(graphics, 'SELLO', font, 3, colWidth, selloY, selloRowHeight);
+    for (int i = 0; i < 4; i++) {
+      _drawCellText(
+          graphics, 'SELLO', font, i, colWidth, selloY, selloRowHeight);
+    }
 
-    // Fila de Firma
     final firmaY = selloY + selloRowHeight;
-    _drawCellText(
-        graphics, 'FIRMA', font, 0, colWidth, firmaY, firmaRowHeight);
-    _drawCellText(
-        graphics, 'FIRMA', font, 1, colWidth, firmaY, firmaRowHeight);
-    _drawCellText(
-        graphics, 'FIRMA', font, 2, colWidth, firmaY, firmaRowHeight);
-    _drawCellText(
-        graphics, 'FIRMA', font, 3, colWidth, firmaY, firmaRowHeight);
+    for (int i = 0; i < 4; i++) {
+      _drawCellText(
+          graphics, 'FIRMA', font, i, colWidth, firmaY, firmaRowHeight);
+    }
   }
 
   void _drawCellText(PdfGraphics graphics, String text, PdfFont font,
       int colIndex, double cellWidth, double cellY, double cellHeight) {
     graphics.drawString(text, font,
-        bounds: Rect.fromLTWH(
-            20 + (colWidth * colIndex), cellY, cellWidth, cellHeight),
+        bounds: Rect.fromLTWH(20 + (colWidth * colIndex), cellY, cellWidth,
+            cellHeight),
         format: PdfStringFormat(
             alignment: PdfTextAlignment.center,
             lineAlignment: PdfVerticalAlignment.middle));
   }
 
-  // Variable auxiliar para el ancho de columna
-  double get colWidth => (595.27 - 40) / 4; // Ancho A4 - márgenes
+  double get colWidth => (595.27 - 40) / 4;
 
   @override
   Widget build(BuildContext context) {
@@ -197,30 +185,30 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       appBar: AppBar(
         title: const Text('Agregar Pie de Página a PDF'),
       ),
-body: _isLoading
-    ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 40.0),
-              child: LinearProgressIndicator(),
+      body: _isLoading
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 40.0),
+                    child: LinearProgressIndicator(),
+                  ),
+                  SizedBox(height: 20),
+                  Text("Procesando PDF..."),
+                ],
+              ),
+            )
+          : const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  'Presiona el botón para seleccionar un PDF, agregarle el pie de página y guardarlo.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
             ),
-            const SizedBox(height: 20),
-            const Text("Procesando PDF..."),
-          ],
-        ),
-      )
-    : Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: const Text(
-            'Presiona el botón para seleccionar un PDF, agregarle el pie de página y guardarlo.',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16),
-          ),
-        ),
-      ),
       floatingActionButton: FloatingActionButton(
         onPressed: _isLoading ? null : _processAndSavePdf,
         tooltip: 'Seleccionar PDF',
