@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class ConfigScreen extends StatefulWidget {
-  final List<String> initialDepartments;
+  final List<Map<String, dynamic>> initialDepartments;
 
   const ConfigScreen({super.key, required this.initialDepartments});
 
@@ -10,8 +10,9 @@ class ConfigScreen extends StatefulWidget {
 }
 
 class _ConfigScreenState extends State<ConfigScreen> {
-  late List<String> _departments;
-  final _textController = TextEditingController();
+  late List<Map<String, dynamic>> _departments;
+  final _nameController = TextEditingController();
+  final _widthController = TextEditingController();
 
   @override
   void initState() {
@@ -20,11 +21,18 @@ class _ConfigScreenState extends State<ConfigScreen> {
   }
 
   void _addDepartment() {
-    if (_textController.text.isNotEmpty) {
-      setState(() {
-        _departments.add(_textController.text);
-        _textController.clear();
-      });
+    if (_nameController.text.isNotEmpty && _widthController.text.isNotEmpty) {
+      final width = double.tryParse(_widthController.text);
+      if (width != null) {
+        setState(() {
+          _departments.add({
+            'name': _nameController.text,
+            'width': width,
+          });
+          _nameController.clear();
+          _widthController.clear();
+        });
+      }
     }
   }
 
@@ -52,15 +60,32 @@ class _ConfigScreenState extends State<ConfigScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              controller: _textController,
-              decoration: InputDecoration(
-                labelText: 'Añadir departamento',
-                suffixIcon: IconButton(
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Departamento',
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 80,
+                  child: TextField(
+                    controller: _widthController,
+                    decoration: const InputDecoration(
+                      labelText: 'Ancho %',
+                    ),
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+                IconButton(
                   icon: const Icon(Icons.add),
                   onPressed: _addDepartment,
                 ),
-              ),
+              ],
             ),
           ),
           Expanded(
@@ -68,7 +93,8 @@ class _ConfigScreenState extends State<ConfigScreen> {
               itemCount: _departments.length,
               itemBuilder: (context, index) {
                 return ListTile(
-                  title: Text(_departments[index]),
+                  title: Text(_departments[index]['name']),
+                  subtitle: Text('Ancho: ${_departments[index]['width']}%'),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete),
                     onPressed: () => _removeDepartment(index),
