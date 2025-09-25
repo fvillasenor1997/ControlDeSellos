@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+// Archivo: lib/stamp_model.dart
+
+import 'package:flutter/material.dart'; // <-- CORRECCIÓN AQUÍ
 import 'package:json_annotation/json_annotation.dart';
 
 part 'stamp_model.g.dart';
