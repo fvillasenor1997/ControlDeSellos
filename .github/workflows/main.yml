@@ -30,13 +30,13 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable' # Puedes cambiarlo a 'beta' o 'dev' si lo necesitas
+          channel: 'stable'
 
       # 4. Instala las dependencias del proyecto
       - name: Install dependencies
         run: flutter pub get
 
-      # 5. (NUEVO) Genera los archivos de código necesarios
+      # 5. Genera los archivos de código necesarios
       - name: Generate code
         run: flutter pub run build_runner build --delete-conflicting-outputs
 
@@ -45,11 +45,10 @@ jobs:
         run: flutter build windows --release
 
       # 7. Empaqueta los artefactos de la compilación
-      # Esto toma la carpeta de salida y la comprime para la descarga
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           # Nombre del archivo que podrás descargar
           name: controldesellos-windows-build
-          # Ruta a la carpeta que contiene el .exe y sus archivos necesarios
-          path: build/windows/runner/Release/
+          # --- RUTA CORREGIDA AQUÍ ---
+          path: build/windows/x64/runner/Release/
