@@ -76,7 +76,7 @@ class _StampManagementScreenState extends State<StampManagementScreen> {
       _saveStamps();
     }
   }
-  
+
   void _deleteStamp(int index) {
       setState(() {
           _stamps.removeAt(index);
@@ -85,7 +85,6 @@ class _StampManagementScreenState extends State<StampManagementScreen> {
   }
 
   Future<void> _applyStampToPdf(Stamp stamp) async {
-    // 1. Seleccionar el archivo PDF
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
@@ -98,97 +97,81 @@ class _StampManagementScreenState extends State<StampManagementScreen> {
       return;
     }
 
-    // 2. Cargar el documento PDF
     File file = File(result.files.single.path!);
     final Uint8List pdfBytes = await file.readAsBytes();
     final PdfDocument document = PdfDocument(inputBytes: pdfBytes);
 
-    // 3. Preparar el estilo del sello y la tabla
     final PdfColor stampColor = PdfColor(
       Color(stamp.colorValue).red,
       Color(stamp.colorValue).green,
       Color(stamp.colorValue).blue,
     );
 
-    // 4. Recorrer cada página y agregar la tabla
+    final PdfStringFormat centerAlignment = PdfStringFormat(
+        alignment: PdfTextAlignment.center,
+        lineAlignment: PdfVerticalAlignment.middle
+    );
+    
     for (int i = 0; i < document.pages.count; i++) {
       final PdfPage page = document.pages[i];
       final Size pageSize = page.getClientSize();
-
-      // Crear la tabla que se dibujará en la parte inferior
       final PdfGrid grid = PdfGrid();
-      grid.columns.add(count: 4); // 4 columnas para los departamentos
+      grid.columns.add(count: 4);
 
-      // Agregar la cabecera principal
       final PdfGridRow header = grid.headers.add(1)[0];
       header.cells[0].value = 'DEPARTAMENTOS';
-      header.cells[0].columnSpan = 4; // Unir las 4 celdas
-      header.cells[0].style.textAlign = PdfTextAlignment.center;
+      header.cells[0].columnSpan = 4;
+      header.cells[0].stringFormat = centerAlignment;
       header.style.font = PdfStandardFont(PdfFontFamily.helvetica, 10, style: PdfFontStyle.bold);
 
-      // Agregar las cabeceras de cada departamento
       final PdfGridRow subHeader = grid.rows.add();
       subHeader.cells[0].value = 'ALMACEN';
       subHeader.cells[1].value = 'METALURGIA';
       subHeader.cells[2].value = 'CALIDAD';
       subHeader.cells[3].value = 'PRODUCCION';
-      subHeader.cells[0].style.textAlign = PdfTextAlignment.center;
-      subHeader.cells[1].style.textAlign = PdfTextAlignment.center;
-      subHeader.cells[2].style.textAlign = PdfTextAlignment.center;
-      subHeader.cells[3].style.textAlign = PdfTextAlignment.center;
-
-
-      // Agregar la fila "SELLO"
+      for(int j=0; j<subHeader.cells.count; j++){
+        subHeader.cells[j].stringFormat = centerAlignment;
+      }
+      
       final PdfGridRow stampRow = grid.rows.add();
-      stampRow.height = 40; // Altura para el sello
+      stampRow.height = 40;
       for (int j = 0; j < stampRow.cells.count; j++) {
           final PdfGridCell cell = stampRow.cells[j];
-          cell.stringFormat = PdfStringFormat(
-              alignment: PdfTextAlignment.center,
-              lineAlignment: PdfVerticalAlignment.middle,
-          );
-          // Dibujar el sello aquí
-          final PdfTemplate stampTemplate = PdfTemplate(cell.style.cellPadding.right, 40);
+          cell.stringFormat = centerAlignment;
+          
+          final PdfTemplate stampTemplate = PdfTemplate(cell.style.cellPadding!.right, 40);
 
-          // Dibujar borde del sello
-          stampTemplate.graphics.drawRectangle(
+          stampTemplate.graphics!.drawRectangle(
               pen: PdfPen(stampColor, width: 2),
-              bounds: Rect.fromLTWH(0, 0, cell.style.cellPadding.right, 35)
+              bounds: Rect.fromLTWH(0, 0, cell.style.cellPadding!.right, 35)
           );
-          // Dibujar texto del sello
-          stampTemplate.graphics.drawString(
+
+          stampTemplate.graphics!.drawString(
               stamp.text,
               PdfStandardFont(
                   PdfFontFamily.helvetica,
-                  stamp.fontSize / 2, // Ajustar tamaño de fuente para el PDF
+                  stamp.fontSize / 2,
                   style: stamp.isBold ? PdfFontStyle.bold : PdfFontStyle.regular
               ),
               brush: PdfSolidBrush(stampColor),
-              bounds: Rect.fromLTWH(0, 0, cell.style.cellPadding.right, 35),
-              format: PdfStringFormat(
-                  alignment: PdfTextAlignment.center,
-                  lineAlignment: PdfVerticalAlignment.middle
-              )
+              bounds: Rect.fromLTWH(0, 0, cell.style.cellPadding!.right, 35),
+              format: centerAlignment
           );
           cell.value = stampTemplate;
       }
 
-
-      // Agregar la fila "FIRMA"
       final PdfGridRow signRow = grid.rows.add();
       signRow.cells[0].value = 'FIRMA:';
       signRow.cells[1].value = 'FIRMA:';
       signRow.cells[2].value = 'FIRMA:';
       signRow.cells[3].value = 'FIRMA:';
 
-      // Dibujar la tabla en la página
       grid.draw(
         page: page,
         bounds: Rect.fromLTWH(0, pageSize.height - 100, pageSize.width, 100),
       );
     }
 
-    // 5. Guardar el nuevo PDF
     final List<int> newPdfBytes = await document.save();
     document.dispose();
 
@@ -198,7 +181,6 @@ class _StampManagementScreenState extends State<StampManagementScreen> {
     final File newFile = File('$path/$newFileName');
     await newFile.writeAsBytes(newPdfBytes, flush: true);
 
-    // 6. Mostrar confirmación
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('PDF guardado en: ${newFile.path}')),
     );
