@@ -1,4 +1,4 @@
-import 'package.flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'config_model.dart';
 
 class ConfigScreen extends StatefulWidget {
@@ -15,7 +15,6 @@ class _ConfigScreenState extends State<ConfigScreen> {
   final _nameController = TextEditingController();
   final _widthController = TextEditingController();
   late final Map<String, TextEditingController> _heightControllers;
-  late final TextEditingController _offsetController; // Nuevo
 
   @override
   void initState() {
@@ -26,9 +25,8 @@ class _ConfigScreenState extends State<ConfigScreen> {
       'department': TextEditingController(text: _config.rowHeights['department'].toString()),
       'stamp': TextEditingController(text: _config.rowHeights['stamp'].toString()),
       'signature': TextEditingController(text: _config.rowHeights['signature'].toString()),
-      'date': TextEditingController(text: _config.rowHeights['date'].toString()),
+      'date': TextEditingController(text: _config.rowHeights['date'].toString()), // Nueva fila
     };
-    _offsetController = TextEditingController(text: _config.tableBottomOffset.toString()); // Nuevo
   }
 
   void _addDepartment() {
@@ -59,10 +57,9 @@ class _ConfigScreenState extends State<ConfigScreen> {
       'department': double.tryParse(_heightControllers['department']!.text) ?? 20.0,
       'stamp': double.tryParse(_heightControllers['stamp']!.text) ?? 50.0,
       'signature': double.tryParse(_heightControllers['signature']!.text) ?? 25.0,
-      'date': double.tryParse(_heightControllers['date']!.text) ?? 25.0,
+      'date': double.tryParse(_heightControllers['date']!.text) ?? 25.0, // Nueva fila
     };
     _config.rowHeights = newHeights;
-    _config.tableBottomOffset = double.tryParse(_offsetController.text) ?? 58.35; // Nuevo
     Navigator.of(context).pop(_config);
   }
 
@@ -145,16 +142,9 @@ class _ConfigScreenState extends State<ConfigScreen> {
                 decoration: const InputDecoration(labelText: 'Altura de la firma'),
                 keyboardType: TextInputType.number,
               ),
-              TextField(
+              TextField( // Nueva fila
                 controller: _heightControllers['date'],
                 decoration: const InputDecoration(labelText: 'Altura de la fecha'),
-                keyboardType: TextInputType.number,
-              ),
-              const Divider(),
-              const Text('Posición de la Tabla', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              TextField( // Nuevo
-                controller: _offsetController,
-                decoration: const InputDecoration(labelText: 'Margen inferior de la tabla'),
                 keyboardType: TextInputType.number,
               ),
             ],
