@@ -3,13 +3,8 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-
-// Importamos el paquete 'pdf' para acceder a clases como PdfColors.
 import 'package:pdf/pdf.dart';
-// Importamos los widgets del paquete 'pdf' con un prefijo 'pw' para crear el documento.
 import 'package:pdf/widgets.dart' as pw;
-
-// Importamos el paquete 'printing' para leer el PDF existente y para la vista previa.
 import 'package:printing/printing.dart';
 
 import 'pdf_preview_screen.dart';
@@ -67,11 +62,11 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       }
 
       final Uint8List pdfBytes = result.files.single.bytes!;
-      final pw.Document newPdf = pw.Document();
-      final PdfDocument existingPdf = await PdfDocument.openData(pdfBytes);
+      final newPdf = pw.Document();
+      final existingPdf = await PdfDocument.openData(pdfBytes);
 
-      for (int i = 0; i < existingPdf.pageCount; i++) {
-        final page = await existingPdf.getPage(i + 1);
+      for (var i = 0; i < existingPdf.pages.length; i++) {
+        final page = existingPdf.pages[i];
         final pageImage = pw.Image(page.image);
 
         newPdf.addPage(
@@ -94,7 +89,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
         );
       }
 
-      final Uint8List newPdfBytes = await newPdf.save();
+      final newPdfBytes = await newPdf.save();
 
       if (mounted) {
         setState(() => _isLoading = false);
@@ -117,12 +112,10 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     }
   }
 
-  // --- WIDGET DE PIE DE PÁGINA CORREGIDO ---
   pw.Widget _buildFooter() {
     return pw.Table(
       border: pw.TableBorder.all(width: 0.5),
       children: [
-        // Fila 1: Encabezado principal que abarca 4 columnas
         pw.TableRow(
           children: [
             pw.Container(
@@ -130,13 +123,8 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
               alignment: pw.Alignment.center,
               child: pw.Text('DEPARTAMENTOS', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
             ),
-            // Se crean celdas vacías que serán "ignoradas" por el span de la primera.
-            pw.Container(),
-            pw.Container(),
-            pw.Container(),
           ],
         ),
-        // Fila 2: Sub-encabezados
         pw.TableRow(
           children: [
             pw.Container(padding: const pw.EdgeInsets.all(2), alignment: pw.Alignment.center, child: pw.Text('METALURGIA', style: const pw.TextStyle(fontSize: 9))),
@@ -145,9 +133,8 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
             pw.Container(padding: const pw.EdgeInsets.all(2), alignment: pw.Alignment.center, child: pw.Text('PRODUCCION', style: const pw.TextStyle(fontSize: 9))),
           ],
         ),
-        // Fila 3: Sello
         pw.TableRow(
-          children: List.generate(4, (index) => 
+          children: List.generate(4, (index) =>
             pw.Container(
               height: 25,
               padding: const pw.EdgeInsets.all(2),
@@ -156,9 +143,8 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
             )
           ),
         ),
-        // Fila 4: Firma
         pw.TableRow(
-          children: List.generate(4, (index) => 
+          children: List.generate(4, (index) =>
             pw.Container(
               height: 15,
               padding: const pw.EdgeInsets.all(2),
@@ -168,24 +154,11 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
           ),
         ),
       ],
-      // Definimos que la primera celda de la primera fila ocupe 4 columnas
       columnWidths: const {
         0: pw.FlexColumnWidth(1),
         1: pw.FlexColumnWidth(1),
         2: pw.FlexColumnWidth(1),
         3: pw.FlexColumnWidth(1),
-      },
-      // Especificamos que la primera celda en la fila 0 debe abarcar 4 columnas.
-      cellDecorations: {
-        const pw.TableCellIndex(0, 0): const pw.BoxDecoration(
-          color: PdfColors.grey200,
-          border: pw.TableBorder(
-            bottom: pw.BorderSide(width: 0.5),
-            right: pw.BorderSide(width: 0.5),
-            left: pw.BorderSide(width: 0.5),
-            top: pw.BorderSide(width: 0.5),
-          ),
-        ),
       },
       cellVerticalAlignment: pw.TableCellVerticalAlignment.middle,
     );
