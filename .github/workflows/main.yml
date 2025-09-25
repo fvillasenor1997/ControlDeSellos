@@ -36,9 +36,7 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # 5. Genera los archivos de código necesarios
-      - name: Generate code
-        run: flutter pub run build_runner build --delete-conflicting-outputs
+
 
       # 6. Compila el ejecutable de Windows
       - name: Build Windows EXE
