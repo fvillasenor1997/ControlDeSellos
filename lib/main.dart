@@ -1,11 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package.file_picker/file_picker.dart';
-import 'package.path_provider/path_provider.dart';
-import 'package.open_file/open_file.dart';
-import 'package.syncfusion_flutter_pdf/pdf.dart';
-import 'package.desktop_drop/desktop_drop.dart';
-import 'package.cross_file/cross_file.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_file/open_file.dart';
+import 'package:syncfusion_flutter_pdf/pdf.dart';
+import 'package:desktop_drop/desktop_drop.dart';
+import 'package:cross_file/cross_file.dart';
+import 'config_model.dart';
 import 'config_screen.dart';
 
 void main() {
@@ -38,12 +39,21 @@ class PdfProcessingScreen extends StatefulWidget {
 class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
   bool _isLoading = false;
   bool _isDragOver = false;
-  List<Map<String, dynamic>> _departments = [
-    {'name': 'METALURGIA', 'width': 49.0},
-    {'name': 'ALMACEN', 'width': 17.0},
-    {'name': 'CALIDAD', 'width': 17.0},
-    {'name': 'PRODUCCION', 'width': 17.0},
-  ];
+  
+  ConfigModel _config = ConfigModel(
+    departments: [
+      {'name': 'METALURGIA', 'width': 49.0},
+      {'name': 'ALMACEN', 'width': 17.0},
+      {'name': 'CALIDAD', 'width': 17.0},
+      {'name': 'PRODUCCION', 'width': 17.0},
+    ],
+    rowHeights: {
+      'header': 20.0,
+      'department': 20.0,
+      'stamp': 50.0,
+      'signature': 25.0,
+    },
+  );
 
   Future<void> _pickAndProcessPdf() async {
     final result = await FilePicker.platform.pickFiles(
@@ -114,11 +124,13 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       PdfFont boldFont, PdfFont smallFont) {
     const double cmToPoints = 28.35;
     const double bottomOffset = 30 + cmToPoints;
-    const double headerRowHeight = 20;
-    const double deptRowHeight = 20;
-    const double selloRowHeight = 50;
-    const double firmaRowHeight = 25;
-    const double footerHeight =
+    
+    final headerRowHeight = _config.rowHeights['header']!;
+    final deptRowHeight = _config.rowHeights['department']!;
+    final selloRowHeight = _config.rowHeights['stamp']!;
+    final firmaRowHeight = _config.rowHeights['signature']!;
+
+    final double footerHeight =
         headerRowHeight + deptRowHeight + selloRowHeight + firmaRowHeight;
     final double footerY = pageSize.height - footerHeight - bottomOffset;
 
@@ -141,10 +153,10 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
         Offset(20 + footerWidth, currentY + selloRowHeight));
 
     double currentX = 20;
-    for (int i = 0; i < _departments.length; i++) {
-      final dept = _departments[i];
+    for (int i = 0; i < _config.departments.length; i++) {
+      final dept = _config.departments[i];
       final colWidth = footerWidth * (dept['width'] / 100);
-      if (i < _departments.length - 1) {
+      if (i < _config.departments.length - 1) {
         currentX += colWidth;
         graphics.drawLine(pen, Offset(currentX, footerY + headerRowHeight),
             Offset(currentX, footerY + footerHeight));
@@ -155,7 +167,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
         headerRowHeight);
     
     currentX = 20;
-    for (final dept in _departments) {
+    for (final dept in _config.departments) {
       final colWidth = footerWidth * (dept['width'] / 100);
       _drawCellText(graphics, dept['name'], font, currentX, colWidth,
           footerY + headerRowHeight, deptRowHeight);
@@ -164,7 +176,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
 
     final selloY = footerY + headerRowHeight + deptRowHeight;
     currentX = 20;
-    for (final dept in _departments) {
+    for (final dept in _config.departments) {
       final colWidth = footerWidth * (dept['width'] / 100);
       _drawCellText(
           graphics, 'SELLO', smallFont, currentX, colWidth, selloY, selloRowHeight, 
@@ -174,7 +186,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
 
     final firmaY = selloY + selloRowHeight;
     currentX = 20;
-    for (final dept in _departments) {
+    for (final dept in _config.departments) {
       final colWidth = footerWidth * (dept['width'] / 100);
       _drawCellText(
           graphics, 'FIRMA', smallFont, currentX, colWidth, firmaY, firmaRowHeight, 
@@ -207,15 +219,15 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
   }
 
   void _openConfigScreen() async {
-    final result = await Navigator.of(context).push<List<Map<String, dynamic>>>(
+    final result = await Navigator.of(context).push<ConfigModel>(
       MaterialPageRoute(
-        builder: (context) => ConfigScreen(initialDepartments: _departments),
+        builder: (context) => ConfigScreen(initialConfig: _config),
       ),
     );
 
     if (result != null) {
       setState(() {
-        _departments = result;
+        _config = result;
       });
     }
   }
