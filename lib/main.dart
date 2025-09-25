@@ -65,8 +65,8 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       final newPdf = pw.Document();
       final existingPdf = await PdfDocument.openData(pdfBytes);
 
-      for (var i = 0; i < existingPdf.pages.length; i++) {
-        final page = existingPdf.pages[i];
+      for (var i = 1; i <= existingPdf.pageCount; i++) {
+        final page = await existingPdf.getPage(i);
         final pageImage = pw.Image(page.image);
 
         newPdf.addPage(
@@ -160,7 +160,6 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
         2: pw.FlexColumnWidth(1),
         3: pw.FlexColumnWidth(1),
       },
-      cellVerticalAlignment: pw.TableCellVerticalAlignment.middle,
     );
   }
 
@@ -178,7 +177,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
                   CircularProgressIndicator(),
                   SizedBox(height: 20),
                   Text("Procesando PDF..."),
-                ],
+_                ],
               ),
             )
           : const Center(
