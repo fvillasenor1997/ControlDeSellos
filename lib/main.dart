@@ -1,13 +1,9 @@
-import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data'; // Necesario para Uint8List
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
-import 'stamp_model.dart';
-import 'stamp_designer_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -19,72 +15,25 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Gestor de Sellos',
+      title: 'Agregar Pie de Página a PDF',
       theme: ThemeData(
         primarySwatch: Colors.indigo,
         useMaterial3: true,
       ),
-      home: const StampManagementScreen(),
+      home: const PdfProcessingScreen(),
     );
   }
 }
 
-class StampManagementScreen extends StatefulWidget {
-  const StampManagementScreen({super.key});
+class PdfProcessingScreen extends StatefulWidget {
+  const PdfProcessingScreen({super.key});
 
   @override
-  _StampManagementScreenState createState() => _StampManagementScreenState();
+  _PdfProcessingScreenState createState() => _PdfProcessingScreenState();
 }
 
-class _StampManagementScreenState extends State<StampManagementScreen> {
-  List<Stamp> _stamps = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadStamps();
-  }
-
-  Future<void> _loadStamps() async {
-    final prefs = await SharedPreferences.getInstance();
-    final stampsString = prefs.getStringList('stamps') ?? [];
-    setState(() {
-      _stamps = stampsString.map((s) => Stamp.fromJson(json.decode(s))).toList();
-    });
-  }
-
-  Future<void> _saveStamps() async {
-    final prefs = await SharedPreferences.getInstance();
-    final stampsString = _stamps.map((s) => json.encode(s.toJson())).toList();
-    await prefs.setStringList('stamps', stampsString);
-  }
-
-  void _addOrEditStamp({Stamp? stamp, int? index}) async {
-    final result = await Navigator.push<Stamp>(
-      context,
-      MaterialPageRoute(builder: (context) => StampDesignerScreen(stamp: stamp)),
-    );
-
-    if (result != null) {
-      setState(() {
-        if (index != null) {
-          _stamps[index] = result;
-        } else {
-          _stamps.add(result);
-        }
-      });
-      _saveStamps();
-    }
-  }
-
-  void _deleteStamp(int index) {
-      setState(() {
-          _stamps.removeAt(index);
-      });
-      _saveStamps();
-  }
-
-  Future<void> _applyStampToPdf(Stamp stamp) async {
+class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
+  Future<void> _addFooterToPdf() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
@@ -101,17 +50,10 @@ class _StampManagementScreenState extends State<StampManagementScreen> {
     final Uint8List pdfBytes = await file.readAsBytes();
     final PdfDocument document = PdfDocument(inputBytes: pdfBytes);
 
-    final PdfColor stampColor = PdfColor(
-      Color(stamp.colorValue).red,
-      Color(stamp.colorValue).green,
-      Color(stamp.colorValue).blue,
-    );
-
     final PdfStringFormat centerAlignment = PdfStringFormat(
         alignment: PdfTextAlignment.center,
-        lineAlignment: PdfVerticalAlignment.middle
-    );
-    
+        lineAlignment: PdfVerticalAlignment.middle);
+
     for (int i = 0; i < document.pages.count; i++) {
       final PdfPage page = document.pages[i];
       final Size pageSize = page.getClientSize();
@@ -122,49 +64,34 @@ class _StampManagementScreenState extends State<StampManagementScreen> {
       header.cells[0].value = 'DEPARTAMENTOS';
       header.cells[0].columnSpan = 4;
       header.cells[0].stringFormat = centerAlignment;
-      header.style.font = PdfStandardFont(PdfFontFamily.helvetica, 10, style: PdfFontStyle.bold);
+      header.style.font =
+          PdfStandardFont(PdfFontFamily.helvetica, 10, style: PdfFontStyle.bold);
 
       final PdfGridRow subHeader = grid.rows.add();
       subHeader.cells[0].value = 'ALMACEN';
       subHeader.cells[1].value = 'METALURGIA';
       subHeader.cells[2].value = 'CALIDAD';
       subHeader.cells[3].value = 'PRODUCCION';
-      for(int j=0; j<subHeader.cells.count; j++){
+      for (int j = 0; j < subHeader.cells.count; j++) {
         subHeader.cells[j].stringFormat = centerAlignment;
       }
-      
+
       final PdfGridRow stampRow = grid.rows.add();
-      stampRow.height = 40;
+      stampRow.height = 40; // Altura de la fila del sello
       for (int j = 0; j < stampRow.cells.count; j++) {
-          final PdfGridCell cell = stampRow.cells[j];
-          cell.stringFormat = centerAlignment;
-          
-          final PdfTemplate stampTemplate = PdfTemplate(cell.style.cellPadding!.right, 40);
-
-          stampTemplate.graphics!.drawRectangle(
-              pen: PdfPen(stampColor, width: 2),
-              bounds: Rect.fromLTWH(0, 0, cell.style.cellPadding!.right, 35)
-          );
-
-          stampTemplate.graphics!.drawString(
-              stamp.text,
-              PdfStandardFont(
-                  PdfFontFamily.helvetica,
-                  stamp.fontSize / 2,
-                  style: stamp.isBold ? PdfFontStyle.bold : PdfFontStyle.regular
-              ),
-              brush: PdfSolidBrush(stampColor),
-              bounds: Rect.fromLTWH(0, 0, cell.style.cellPadding!.right, 35),
-              format: centerAlignment
-          );
-          cell.value = stampTemplate;
+        stampRow.cells[j].value = 'SELLO';
+        stampRow.cells[j].stringFormat = centerAlignment;
       }
 
       final PdfGridRow signRow = grid.rows.add();
-      signRow.cells[0].value = 'FIRMA:';
-      signRow.cells[1].value = 'FIRMA:';
-      signRow.cells[2].value = 'FIRMA:';
-      signRow.cells[3].value = 'FIRMA:';
+      signRow.cells[0].value = 'FIRMA';
+      signRow.cells[1].value = 'FIRMA';
+      signRow.cells[2].value = 'FIRMA';
+      signRow.cells[3].value = 'FIRMA';
+       for (int j = 0; j < signRow.cells.count; j++) {
+        signRow.cells[j].stringFormat = centerAlignment;
+      }
+
 
       grid.draw(
         page: page,
@@ -177,7 +104,8 @@ class _StampManagementScreenState extends State<StampManagementScreen> {
 
     final Directory directory = await getApplicationDocumentsDirectory();
     final String path = directory.path;
-    final String newFileName = 'sellado_${DateTime.now().millisecondsSinceEpoch}.pdf';
+    final String newFileName =
+        'firmado_${DateTime.now().millisecondsSinceEpoch}.pdf';
     final File newFile = File('$path/$newFileName');
     await newFile.writeAsBytes(newPdfBytes, flush: true);
 
@@ -190,39 +118,13 @@ class _StampManagementScreenState extends State<StampManagementScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mis Sellos'),
+        title: const Text('Agregar Pie de Página a PDF'),
       ),
-      body: _stamps.isEmpty
-          ? const Center(child: Text('No tienes sellos. ¡Crea uno nuevo!'))
-          : ListView.builder(
-              itemCount: _stamps.length,
-              itemBuilder: (context, index) {
-                final stamp = _stamps[index];
-                return ListTile(
-                  leading: Icon(
-                    stamp.shape == 'circle' ? Icons.circle_outlined : Icons.crop_square,
-                    color: Color(stamp.colorValue),
-                  ),
-                  title: Text(stamp.text),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit),
-                        onPressed: () => _addOrEditStamp(stamp: stamp, index: index),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete),
-                        onPressed: () => _deleteStamp(index),
-                      ),
-                    ],
-                  ),
-                  onTap: () => _applyStampToPdf(stamp),
-                );
-              },
-            ),
+      body: const Center(
+        child: Text('Presiona el botón para seleccionar un PDF y agregar el pie de página.'),
+      ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _addOrEditStamp(),
+        onPressed: _addFooterToPdf,
         child: const Icon(Icons.add),
       ),
     );
