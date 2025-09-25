@@ -1,0 +1,51 @@
+# Nombre del workflow que aparecerá en la pestaña "Actions" de GitHub
+name: Build Windows EXE
+
+# Define cuándo se ejecutará este workflow
+on:
+  # Se ejecuta cada vez que haces un "push" a la rama "main"
+  push:
+    branches: [ "main" ]
+  # También permite ejecutarlo manualmente desde la pestaña Actions
+  workflow_dispatch:
+
+jobs:
+  build:
+    # El workflow se ejecutará en una máquina virtual de Windows proporcionada por GitHub
+    runs-on: windows-latest
+
+    steps:
+      # 1. Descarga el código de tu repositorio
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Configura Java (a veces requerido por dependencias de Flutter)
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # 3. Configura Flutter en la máquina virtual
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable' # Puedes cambiarlo a 'beta' o 'dev' si lo necesitas
+
+      # 4. Instala las dependencias del proyecto
+      - name: Install dependencies
+        run: flutter pub get
+
+      # 5. Compila el ejecutable de Windows
+      - name: Build Windows EXE
+        run: flutter build windows --release
+
+      # 6. Empaqueta los artefactos de la compilación
+      # Esto toma la carpeta de salida y la comprime para la descarga
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          # Nombre del archivo que podrás descargar
+          name: controldesellos-windows-build
+          # Ruta a la carpeta que contiene el .exe y sus archivos necesarios
+          path: build/windows/runner/Release/
