@@ -1,8 +1,12 @@
+// lib/main.dart
+
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:syncfusion_flutter_pdf/pdf.dart';
-import 'pdf_preview_screen.dart'; // Asegúrate de que este archivo existe
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+import 'pdf_preview_screen.dart'; 
 
 void main() {
   runApp(const MyApp());
@@ -34,6 +38,7 @@ class PdfProcessingScreen extends StatefulWidget {
 class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
   bool _isLoading = false;
 
+  // --- FUNCIÓN ACTUALIZADA CON LA LIBRERÍA PDF/PRINTING ---
   Future<void> _processAndPreviewPdf() async {
     setState(() {
       _isLoading = true;
@@ -55,72 +60,62 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
         }
         return;
       }
-
+      
       final Uint8List pdfBytes = result.files.single.bytes!;
-      final PdfDocument document = PdfDocument(inputBytes: pdfBytes);
-      final PdfStringFormat centerAlignment = PdfStringFormat(
-          alignment: PdfTextAlignment.center,
-          lineAlignment: PdfVerticalAlignment.middle);
+      
+      // Creamos un nuevo documento PDF
+      final pw.Document newPdf = pw.Document();
 
-      for (int i = 0; i < document.pages.count; i++) {
-        final PdfPage page = document.pages[i];
-        final Size pageSize = page.getClientSize();
-        final PdfGrid grid = PdfGrid();
-        grid.columns.add(count: 4);
+      // Cargamos el PDF existente para poder copiar sus páginas
+      final PdfDocument existingPdf = await PdfDocument.openData(pdfBytes);
+      
+      // Iteramos sobre cada página del PDF original
+      for (int i = 0; i < existingPdf.pageCount; i++) {
+        final PdfPage page = await existingPdf.getPage(i+1);
+        final pw.Image pageImage = pw.Image(page.image);
 
-        final PdfGridRow header = grid.headers.add(1)[0];
-        header.cells[0].value = 'DEPARTAMENTOS';
-        header.cells[0].columnSpan = 4;
-        header.cells[0].stringFormat = centerAlignment;
-        header.style.font =
-            PdfStandardFont(PdfFontFamily.helvetica, 10, style: PdfFontStyle.bold);
-
-        final PdfGridRow subHeader = grid.rows.add();
-        // --- CAMBIO DE ORDEN AQUÍ ---
-        subHeader.cells[0].value = 'METALURGIA';
-        subHeader.cells[1].value = 'ALMACEN';
-        subHeader.cells[2].value = 'CALIDAD';
-        subHeader.cells[3].value = 'PRODUCCION';
-        // --- FIN DEL CAMBIO ---
-        for (int j = 0; j < subHeader.cells.count; j++) {
-          subHeader.cells[j].stringFormat = centerAlignment;
-        }
-
-        final PdfGridRow stampRow = grid.rows.add();
-        stampRow.height = 40;
-        for (int j = 0; j < stampRow.cells.count; j++) {
-          stampRow.cells[j].value = 'SELLO';
-          stampRow.cells[j].stringFormat = centerAlignment;
-        }
-
-        final PdfGridRow signRow = grid.rows.add();
-        for (int j = 0; j < signRow.cells.count; j++) {
-            signRow.cells[j].value = 'FIRMA';
-            signRow.cells[j].stringFormat = centerAlignment;
-        }
-
-        grid.draw(
-          page: page,
-          bounds: Rect.fromLTWH(0, pageSize.height - 100, pageSize.width, 100),
+        // Agregamos una nueva página al documento que estamos creando
+        newPdf.addPage(
+          pw.Page(
+            pageFormat: page.pageFormat,
+            build: (pw.Context context) {
+              // Usamos un Stack para poner el pie de página sobre la página original
+              return pw.Stack(
+                children: [
+                  // 1. La página original como imagen de fondo
+                  pageImage,
+                  // 2. Nuestro pie de página posicionado en la parte inferior
+                  pw.Positioned(
+                    bottom: 20,
+                    left: 0,
+                    right: 0,
+                    child: _buildFooter(),
+                  ),
+                ],
+              );
+            },
+          ),
         );
       }
-
-      final List<int> newPdfBytes = await document.save();
-      document.dispose();
       
+      // Guardamos el nuevo PDF en memoria
+      final Uint8List newPdfBytes = await newPdf.save();
+
       if (mounted) {
         setState(() => _isLoading = false);
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) =>
-                PdfPreviewScreen(pdfBytes: Uint8List.fromList(newPdfBytes)),
+                PdfPreviewScreen(pdfBytes: newPdfBytes),
           ),
         );
       }
 
-    } catch (e) {
+    } catch (e, s) {
       if (mounted) {
         setState(() => _isLoading = false);
+        print('Error al procesar el PDF: $e');
+        print('Stack trace: $s');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al procesar el PDF: $e')),
         );
@@ -128,8 +123,60 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     }
   }
 
+  // --- WIDGET AUXILIAR PARA CREAR EL PIE DE PÁGINA ---
+  pw.Widget _buildFooter() {
+    return pw.Table(
+      border: pw.TableBorder.all(),
+      columnWidths: {
+        0: const pw.FlexColumnWidth(1),
+        1: const pw.FlexColumnWidth(1),
+        2: const pw.FlexColumnWidth(1),
+        3: const pw.FlexColumnWidth(1),
+      },
+      children: [
+        pw.TableRow(
+          children: [
+            pw.Container(
+              alignment: pw.Alignment.center,
+              padding: const pw.EdgeInsets.all(5),
+              child: pw.Text(
+                'DEPARTAMENTOS',
+                style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+              ),
+            ),
+          ],
+          repeat: true, // Para que el encabezado se repita en varias páginas
+        ),
+        pw.TableRow(
+          children: [
+            pw.Text('METALURGIA', textAlign: pw.TextAlign.center),
+            pw.Text('ALMACEN', textAlign: pw.TextAlign.center),
+            pw.Text('CALIDAD', textAlign: pw.TextAlign.center),
+            pw.Text('PRODUCCION', textAlign: pw.TextAlign.center),
+          ],
+        ),
+        pw.TableRow(
+          children: List.generate(4, (_) => pw.Container(
+            height: 25,
+            alignment: pw.Alignment.center,
+            child: pw.Text('SELLO'),
+          )),
+        ),
+        pw.TableRow(
+          children: List.generate(4, (_) => pw.Container(
+            height: 15,
+            alignment: pw.Alignment.center,
+            child: pw.Text('FIRMA'),
+          )),
+        ),
+      ],
+    );
+  }
+
+
   @override
   Widget build(BuildContext context) {
+    // ... El resto del widget build se mantiene igual
     return Scaffold(
       appBar: AppBar(
         title: const Text('Agregar Pie de Página a PDF'),
@@ -163,4 +210,3 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     );
   }
 }
-
