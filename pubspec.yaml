@@ -12,7 +12,7 @@ dependencies:
   # Librería principal para manipular PDF
   syncfusion_flutter_pdf: ^26.1.35
   # Para seleccionar el archivo
-  file_picker: ^6.2.1
+  file_picker: 
   # Para guardar el archivo en el dispositivo
   path_provider: ^2.0.2
   # Para abrir el archivo guardado y previsualizarlo
