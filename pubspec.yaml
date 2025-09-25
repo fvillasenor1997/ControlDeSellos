@@ -17,11 +17,11 @@ dependencies:
   # Selección de archivos
   file_picker: ^6.1.5
 
-  # Guardar archivos en dispositivo
-  path_provider: ^2.1.5
+  # Guardar archivos en dispositivo (compatible con Dart 3.3.4)
+  path_provider: ^2.0.11
 
   # Abrir archivos
-  open_file: ^3.5.10
+  open_file: ^3.5.4
 
   # Arrastrar y soltar
   desktop_drop: ^0.4.4
