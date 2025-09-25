@@ -43,10 +43,9 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf'],
-        withData: true, // Pide el contenido del archivo directamente
+        withData: true,
       );
 
-      // Verificación robusta: Asegura que el resultado no sea nulo y que los bytes existan
       if (result == null || result.files.single.bytes == null) {
         if (mounted) {
           setState(() => _isLoading = false);
@@ -57,7 +56,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
         return;
       }
 
-      final Uint8List pdfBytes = result.files.single.bytes!; // Ahora es seguro usar '!'
+      final Uint8List pdfBytes = result.files.single.bytes!;
       final PdfDocument document = PdfDocument(inputBytes: pdfBytes);
       final PdfStringFormat centerAlignment = PdfStringFormat(
           alignment: PdfTextAlignment.center,
@@ -77,10 +76,12 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
             PdfStandardFont(PdfFontFamily.helvetica, 10, style: PdfFontStyle.bold);
 
         final PdfGridRow subHeader = grid.rows.add();
-        subHeader.cells[0].value = 'ALMACEN';
-        subHeader.cells[1].value = 'METALURGIA';
+        // --- CAMBIO DE ORDEN AQUÍ ---
+        subHeader.cells[0].value = 'METALURGIA';
+        subHeader.cells[1].value = 'ALMACEN';
         subHeader.cells[2].value = 'CALIDAD';
         subHeader.cells[3].value = 'PRODUCCION';
+        // --- FIN DEL CAMBIO ---
         for (int j = 0; j < subHeader.cells.count; j++) {
           subHeader.cells[j].stringFormat = centerAlignment;
         }
@@ -162,3 +163,4 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     );
   }
 }
+
