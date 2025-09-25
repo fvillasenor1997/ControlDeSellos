@@ -117,6 +117,12 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     final PdfPen pen = PdfPen(PdfColor(0, 0, 0), width: 0.5);
     final double footerWidth = pageSize.width - 40;
 
+    // Calcular anchos de columna
+    final double col1Width = footerWidth * 0.49;
+    final double col2Width = footerWidth * 0.17;
+    final double col3Width = footerWidth * 0.17;
+    final double col4Width = footerWidth * 0.17;
+
     // Rectángulo
     graphics.drawRectangle(
       pen: pen,
@@ -135,56 +141,100 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
         Offset(20 + footerWidth, currentY + selloRowHeight));
 
     // Líneas verticales
-    final double colWidth = footerWidth / 4;
-    for (int i = 1; i < 4; i++) {
-      graphics.drawLine(
-        pen,
-        Offset(20 + (colWidth * i), footerY + headerRowHeight),
-        Offset(20 + (colWidth * i), footerY + footerHeight),
-      );
-    }
+    double currentX = 20;
+    currentX += col1Width;
+    graphics.drawLine(pen, Offset(currentX, footerY + headerRowHeight),
+        Offset(currentX, footerY + footerHeight));
+    currentX += col2Width;
+    graphics.drawLine(pen, Offset(currentX, footerY + headerRowHeight),
+        Offset(currentX, footerY + footerHeight));
+    currentX += col3Width;
+    graphics.drawLine(pen, Offset(currentX, footerY + headerRowHeight),
+        Offset(currentX, footerY + footerHeight));
+
 
     // Texto
-    _drawCellText(graphics, 'DEPARTAMENTOS', boldFont, 0, colWidth * 4, footerY,
+    _drawCellText(graphics, 'DEPARTAMENTOS', boldFont, 20, footerWidth, footerY,
         headerRowHeight);
-    _drawCellText(graphics, 'METALURGIA', font, 0, colWidth,
+    
+    currentX = 20;
+    _drawCellText(graphics, 'METALURGIA', font, currentX, col1Width,
         footerY + headerRowHeight, deptRowHeight);
-    _drawCellText(graphics, 'ALMACEN', font, 1, colWidth,
+    currentX += col1Width;
+    _drawCellText(graphics, 'ALMACEN', font, currentX, col2Width,
         footerY + headerRowHeight, deptRowHeight);
-    _drawCellText(graphics, 'CALIDAD', font, 2, colWidth,
+    currentX += col2Width;
+    _drawCellText(graphics, 'CALIDAD', font, currentX, col3Width,
         footerY + headerRowHeight, deptRowHeight);
-    _drawCellText(graphics, 'PRODUCCION', font, 3, colWidth,
+    currentX += col3Width;
+    _drawCellText(graphics, 'PRODUCCION', font, currentX, col4Width,
         footerY + headerRowHeight, deptRowHeight);
+
 
     final selloY = footerY + headerRowHeight + deptRowHeight;
-    for (int i = 0; i < 4; i++) {
-      _drawCellText(
-          graphics, 'SELLO', smallFont, i, colWidth, selloY, selloRowHeight, alignment: PdfTextAlignment.left);
-    }
+    currentX = 20;
+    _drawCellText(
+        graphics, 'SELLO', smallFont, currentX, col1Width, selloY, selloRowHeight, 
+        alignment: PdfTextAlignment.left, vAlignment: PdfVerticalAlignment.top);
+    currentX += col1Width;
+     _drawCellText(
+        graphics, 'SELLO', smallFont, currentX, col2Width, selloY, selloRowHeight, 
+        alignment: PdfTextAlignment.left, vAlignment: PdfVerticalAlignment.top);
+    currentX += col2Width;
+     _drawCellText(
+        graphics, 'SELLO', smallFont, currentX, col3Width, selloY, selloRowHeight, 
+        alignment: PdfTextAlignment.left, vAlignment: PdfVerticalAlignment.top);
+    currentX += col3Width;
+     _drawCellText(
+        graphics, 'SELLO', smallFont, currentX, col4Width, selloY, selloRowHeight, 
+        alignment: PdfTextAlignment.left, vAlignment: PdfVerticalAlignment.top);
 
     final firmaY = selloY + selloRowHeight;
-    for (int i = 0; i < 4; i++) {
-      _drawCellText(
-          graphics, 'FIRMA', smallFont, i, colWidth, firmaY, firmaRowHeight, alignment: PdfTextAlignment.left);
-    }
+    currentX = 20;
+    _drawCellText(
+        graphics, 'FIRMA', smallFont, currentX, col1Width, firmaY, firmaRowHeight, 
+        alignment: PdfTextAlignment.left, vAlignment: PdfVerticalAlignment.top);
+    currentX += col1Width;
+    _drawCellText(
+        graphics, 'FIRMA', smallFont, currentX, col2Width, firmaY, firmaRowHeight, 
+        alignment: PdfTextAlignment.left, vAlignment: PdfVerticalAlignment.top);
+    currentX += col2Width;
+    _drawCellText(
+        graphics, 'FIRMA', smallFont, currentX, col3Width, firmaY, firmaRowHeight, 
+        alignment: PdfTextAlignment.left, vAlignment: PdfVerticalAlignment.top);
+    currentX += col3Width;
+    _drawCellText(
+        graphics, 'FIRMA', smallFont, currentX, col4Width, firmaY, firmaRowHeight, 
+        alignment: PdfTextAlignment.left, vAlignment: PdfVerticalAlignment.top);
   }
 
   void _drawCellText(PdfGraphics graphics, String text, PdfFont font,
-      int colIndex, double cellWidth, double cellY, double cellHeight, {PdfTextAlignment alignment = PdfTextAlignment.center}) {
-        double padding = 2;
-        double xPosition = 20 + (colWidth * colIndex);
-        if (alignment == PdfTextAlignment.left) {
-          xPosition += padding;
-        }
+      double cellX, double cellWidth, double cellY, double cellHeight,
+      {PdfTextAlignment alignment = PdfTextAlignment.center,
+       PdfVerticalAlignment vAlignment = PdfVerticalAlignment.middle}) {
+        
+    double hPadding = 2;
+    double vPadding = 2;
+    
+    Rect cellBounds = Rect.fromLTWH(
+      cellX, 
+      cellY, 
+      cellWidth, 
+      cellHeight
+    );
+
+    Rect paddedBounds = Rect.fromLTWH(
+        cellBounds.left + hPadding,
+        cellBounds.top + vPadding,
+        cellBounds.width - (hPadding * 2),
+        cellBounds.height - (vPadding * 2));
+
     graphics.drawString(text, font,
-        bounds: Rect.fromLTWH(xPosition, cellY, cellWidth,
-            cellHeight),
+        bounds: paddedBounds,
         format: PdfStringFormat(
             alignment: alignment,
-            lineAlignment: PdfVerticalAlignment.middle));
+            lineAlignment: vAlignment));
   }
-
-  double get colWidth => (595.27 - 40) / 4;
 
   @override
   Widget build(BuildContext context) {
