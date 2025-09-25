@@ -25,6 +25,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
       'department': TextEditingController(text: _config.rowHeights['department'].toString()),
       'stamp': TextEditingController(text: _config.rowHeights['stamp'].toString()),
       'signature': TextEditingController(text: _config.rowHeights['signature'].toString()),
+      'date': TextEditingController(text: _config.rowHeights['date'].toString()), // Nueva fila
     };
   }
 
@@ -56,6 +57,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
       'department': double.tryParse(_heightControllers['department']!.text) ?? 20.0,
       'stamp': double.tryParse(_heightControllers['stamp']!.text) ?? 50.0,
       'signature': double.tryParse(_heightControllers['signature']!.text) ?? 25.0,
+      'date': double.tryParse(_heightControllers['date']!.text) ?? 25.0, // Nueva fila
     };
     _config.rowHeights = newHeights;
     Navigator.of(context).pop(_config);
@@ -138,6 +140,11 @@ class _ConfigScreenState extends State<ConfigScreen> {
               TextField(
                 controller: _heightControllers['signature'],
                 decoration: const InputDecoration(labelText: 'Altura de la firma'),
+                keyboardType: TextInputType.number,
+              ),
+              TextField( // Nueva fila
+                controller: _heightControllers['date'],
+                decoration: const InputDecoration(labelText: 'Altura de la fecha'),
                 keyboardType: TextInputType.number,
               ),
             ],
