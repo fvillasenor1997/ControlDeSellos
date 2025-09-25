@@ -181,27 +181,27 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       appBar: AppBar(
         title: const Text('Agregar Pie de Página a PDF'),
       ),
-  body: _isLoading
-      ? const Center( // <-- This 'const' is the problem
+body: _isLoading
+      ? Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(), // This widget isn't constant
+            children: const [
+              CircularProgressIndicator(),
               SizedBox(height: 20),
               Text("Procesando PDF..."),
             ],
           ),
         )
       : const Center(
-              child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Text(
-                  'Presiona el botón para seleccionar un PDF, agregarle el pie de página y guardarlo.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16),
-                ),
-              ),
+          child: Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text(
+              'Presiona el botón para seleccionar un PDF, agregarle el pie de página y guardarlo.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16),
             ),
+          ),
+        ),
       floatingActionButton: FloatingActionButton(
         onPressed: _isLoading ? null : _processAndSavePdf,
         tooltip: 'Seleccionar PDF',
