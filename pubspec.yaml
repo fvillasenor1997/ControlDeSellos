@@ -32,8 +32,9 @@ dependencies:
     sdk: flutter
   file_picker: ^8.0.0
   path_provider: ^2.0.11
-  syncfusion_flutter_pdf: ^26.1.35
-  syncfusion_flutter_pdfviewer: ^26.1.35
+  pdf: ^3.11.0 # Una librería muy potente para crear y editar PDFs
+  printing: ^5.12.0 # Proporciona una excelente vista previa y funciones para guardar/imprimir
+
 
   cupertino_icons: ^1.0.8
 
