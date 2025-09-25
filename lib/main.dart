@@ -64,18 +64,20 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       final pdfBytes = result.files.single.bytes!;
       final newPdf = pw.Document();
 
-      // We use Printing.rasterize to get each page of the PDF as an image.
-      await for (final page in Printing.rasterize(pdfBytes)) {
-        final pageImage = pw.Image(pw.MemoryImage(await page.toPng()));
+      final pdf = pw.Document();
+      final existingPdf = await Printing.layoutPdf(
+        onLayout: (PdfPageFormat format) async => pdfBytes,
+      );
 
-        newPdf.addPage(
+
+      for (final page in existingPdf) {
+         newPdf.addPage(
           pw.Page(
-            // We get the page format from the rasterized page to preserve it.
-            pageFormat: PdfPageFormat(page.width, page.height),
+            pageFormat: PdfPageFormat.a4,
             build: (pw.Context context) {
               return pw.Stack(
                 children: [
-                  pw.Center(child: pageImage),
+                  pw.Center(child: pw.Image(page.image)),
                   pw.Positioned(
                     bottom: 20,
                     left: 20,
