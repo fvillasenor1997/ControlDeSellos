@@ -48,7 +48,9 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       );
 
       if (result == null) {
-        setState(() => _isLoading = false); // Oculta el indicador si se cancela
+        if (mounted) {
+          setState(() => _isLoading = false); // Oculta el indicador si se cancela
+        }
         return;
       }
 
@@ -108,11 +110,10 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       final List<int> newPdfBytes = await document.save();
       document.dispose();
       
-      // Oculta el indicador de carga
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false); // Oculta el indicador de carga
 
-      // Navega a la pantalla de vista previa si el contexto sigue siendo válido
-      if (context.mounted) {
+        // Navega a la pantalla de vista previa
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) =>
@@ -122,9 +123,9 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       }
 
     } catch (e) {
-      // Si ocurre un error, oculta el indicador y muestra un mensaje
-      setState(() => _isLoading = false);
-      if (context.mounted) {
+      if (mounted) {
+        // Si ocurre un error, oculta el indicador y muestra un mensaje
+        setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al procesar el PDF: $e')),
         );
