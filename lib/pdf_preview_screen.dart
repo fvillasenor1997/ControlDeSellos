@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
-import 'package.flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 
@@ -18,17 +18,19 @@ class PdfPreviewScreen extends StatelessWidget {
       final File newFile = File('$path/$newFileName');
       await newFile.writeAsBytes(pdfBytes, flush: true);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('PDF guardado en: ${newFile.path}')),
-      );
-      // Regresa a la pantalla principal después de guardar
       if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('PDF guardado en: ${newFile.path}')),
+        );
+        // Regresa a la pantalla principal después de guardar
         Navigator.of(context).pop();
       }
     } catch (e) {
-       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al guardar el PDF: $e')),
-      );
+      if (context.mounted) {
+         ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al guardar el PDF: $e')),
+        );
+      }
     }
   }
 
