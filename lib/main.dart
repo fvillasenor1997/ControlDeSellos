@@ -3,10 +3,16 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:pdf/pdf.dart';
+
+// Importamos el paquete 'pdf' con un prefijo 'pw' para evitar conflictos.
+// Usaremos este para CREAR el nuevo documento y sus widgets.
 import 'package:pdf/widgets.dart' as pw;
+
+// Importamos el paquete 'printing' con un prefijo 'printing'.
+// Usaremos este para LEER el documento existente y para la PREVISUALIZACIÓN.
 import 'package:printing/printing.dart';
-import 'pdf_preview_screen.dart'; 
+
+import 'pdf_preview_screen.dart'; // Este archivo no necesita cambios.
 
 void main() {
   runApp(const MyApp());
@@ -38,7 +44,6 @@ class PdfProcessingScreen extends StatefulWidget {
 class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
   bool _isLoading = false;
 
-  // --- FUNCIÓN ACTUALIZADA CON LA LIBRERÍA PDF/PRINTING ---
   Future<void> _processAndPreviewPdf() async {
     setState(() {
       _isLoading = true;
@@ -60,35 +65,35 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
         }
         return;
       }
-      
+
       final Uint8List pdfBytes = result.files.single.bytes!;
-      
-      // Creamos un nuevo documento PDF
+
+      // 1. Usamos la clase Document del paquete 'pdf' (con prefijo pw) para CREAR el nuevo PDF.
       final pw.Document newPdf = pw.Document();
 
-      // Cargamos el PDF existente para poder copiar sus páginas
-      final PdfDocument existingPdf = await PdfDocument.openData(pdfBytes);
-      
-      // Iteramos sobre cada página del PDF original
-      for (int i = 0; i < existingPdf.pageCount; i++) {
-        final PdfPage page = await existingPdf.getPage(i+1);
+      // 2. Usamos la clase PdfDocument del paquete 'printing' para LEER el PDF existente.
+      final printing.PdfDocument existingPdf = await printing.Printing.rasterize(pdfBytes);
+
+      // 3. Iteramos sobre cada página del PDF original.
+      await for (var page in existingPdf.pages) {
+        // Obtenemos la imagen de la página.
         final pw.Image pageImage = pw.Image(page.image);
 
-        // Agregamos una nueva página al documento que estamos creando
+        // Agregamos una nueva página al documento que estamos creando.
         newPdf.addPage(
           pw.Page(
             pageFormat: page.pageFormat,
             build: (pw.Context context) {
-              // Usamos un Stack para poner el pie de página sobre la página original
+              // Usamos un Stack para poner el pie de página sobre la página original.
               return pw.Stack(
                 children: [
-                  // 1. La página original como imagen de fondo
+                  // La página original como una imagen de fondo.
                   pageImage,
-                  // 2. Nuestro pie de página posicionado en la parte inferior
+                  // Nuestro pie de página posicionado en la parte inferior.
                   pw.Positioned(
                     bottom: 20,
-                    left: 0,
-                    right: 0,
+                    left: 20,
+                    right: 20,
                     child: _buildFooter(),
                   ),
                 ],
@@ -97,8 +102,8 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
           ),
         );
       }
-      
-      // Guardamos el nuevo PDF en memoria
+
+      // 4. Guardamos el nuevo PDF en memoria.
       final Uint8List newPdfBytes = await newPdf.save();
 
       if (mounted) {
@@ -110,12 +115,11 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
           ),
         );
       }
-
     } catch (e, s) {
       if (mounted) {
         setState(() => _isLoading = false);
-        print('Error al procesar el PDF: $e');
-        print('Stack trace: $s');
+        debugPrint('Error al procesar el PDF: $e');
+        debugPrint('Stack trace: $s');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al procesar el PDF: $e')),
         );
@@ -123,60 +127,53 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     }
   }
 
-  // --- WIDGET AUXILIAR PARA CREAR EL PIE DE PÁGINA ---
+  // Widget auxiliar para crear la tabla del pie de página.
   pw.Widget _buildFooter() {
-    return pw.Table(
-      border: pw.TableBorder.all(),
+    return pw.Table.fromTextArray(
+      border: pw.TableBorder.all(color: const PdfColor.fromInt(0xff000000), width: 0.5),
+      cellAlignment: pw.Alignment.center,
+      headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
+      headerDecoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xfff2f2f2)),
+      cellStyle: const pw.TextStyle(fontSize: 9),
       columnWidths: {
         0: const pw.FlexColumnWidth(1),
         1: const pw.FlexColumnWidth(1),
         2: const pw.FlexColumnWidth(1),
         3: const pw.FlexColumnWidth(1),
       },
-      children: [
-        pw.TableRow(
-          children: [
-            pw.Container(
-              alignment: pw.Alignment.center,
-              padding: const pw.EdgeInsets.all(5),
-              child: pw.Text(
-                'DEPARTAMENTOS',
-                style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-              ),
-            ),
-          ],
-          repeat: true, // Para que el encabezado se repita en varias páginas
-        ),
-        pw.TableRow(
-          children: [
-            pw.Text('METALURGIA', textAlign: pw.TextAlign.center),
-            pw.Text('ALMACEN', textAlign: pw.TextAlign.center),
-            pw.Text('CALIDAD', textAlign: pw.TextAlign.center),
-            pw.Text('PRODUCCION', textAlign: pw.TextAlign.center),
-          ],
-        ),
-        pw.TableRow(
-          children: List.generate(4, (_) => pw.Container(
-            height: 25,
-            alignment: pw.Alignment.center,
-            child: pw.Text('SELLO'),
-          )),
-        ),
-        pw.TableRow(
-          children: List.generate(4, (_) => pw.Container(
-            height: 15,
-            alignment: pw.Alignment.center,
-            child: pw.Text('FIRMA'),
-          )),
-        ),
+      // Definimos el contenido de la tabla
+      headers: ['DEPARTAMENTOS', '', '', ''], // Encabezado que abarca todas las columnas
+      data: [
+        ['METALURGIA', 'ALMACEN', 'CALIDAD', 'PRODUCCION'],
+        ['SELLO', 'SELLO', 'SELLO', 'SELLO'],
+        ['FIRMA', 'FIRMA', 'FIRMA', 'FIRMA'],
       ],
+      // Personalización para que el encabezado "DEPARTAMENTOS" ocupe 4 columnas
+      headerCellBuilder: (context, index) {
+        if (index == 0) {
+          return pw.Container(
+            alignment: pw.Alignment.center,
+            padding: const pw.EdgeInsets.all(4),
+            child: pw.Text('DEPARTAMENTOS', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
+          );
+        }
+        return pw.Container(); // Celdas vacías para las otras columnas del encabezado
+      },
+      // Añadimos altura a las filas de SELLO y FIRMA
+      cellBuilder: (context, index, data) {
+        final height = (context.row == 2 || context.row == 3) ? 25.0 : 15.0;
+        return pw.Container(
+          height: height,
+          alignment: pw.Alignment.center,
+          child: pw.Text(data),
+        );
+      },
     );
   }
 
 
   @override
   Widget build(BuildContext context) {
-    // ... El resto del widget build se mantiene igual
     return Scaffold(
       appBar: AppBar(
         title: const Text('Agregar Pie de Página a PDF'),
