@@ -2,7 +2,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
-import 'pdf_preview_screen.dart'; // Importa la pantalla de vista previa
+import 'pdf_preview_screen.dart'; // Asegúrate de que este archivo existe
 
 void main() {
   runApp(const MyApp());
@@ -32,39 +32,37 @@ class PdfProcessingScreen extends StatefulWidget {
 }
 
 class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
-  bool _isLoading = false; // Controla el indicador de carga
+  bool _isLoading = false;
 
   Future<void> _processAndPreviewPdf() async {
     setState(() {
-      _isLoading = true; // Muestra el indicador de carga
+      _isLoading = true;
     });
 
     try {
-      // Pide el archivo y sus datos (bytes) directamente
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf'],
-        withData: true,
+        withData: true, // Pide el contenido del archivo directamente
       );
 
-      if (result == null) {
+      // Verificación robusta: Asegura que el resultado no sea nulo y que los bytes existan
+      if (result == null || result.files.single.bytes == null) {
         if (mounted) {
-          setState(() => _isLoading = false); // Oculta el indicador si se cancela
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No se seleccionó ningún archivo o no se pudo leer.')),
+          );
         }
         return;
       }
 
-      final Uint8List? pdfBytes = result.files.single.bytes;
-      if (pdfBytes == null) {
-        throw Exception("No se pudieron leer los datos del archivo.");
-      }
-
+      final Uint8List pdfBytes = result.files.single.bytes!; // Ahora es seguro usar '!'
       final PdfDocument document = PdfDocument(inputBytes: pdfBytes);
       final PdfStringFormat centerAlignment = PdfStringFormat(
           alignment: PdfTextAlignment.center,
           lineAlignment: PdfVerticalAlignment.middle);
 
-      // Itera sobre cada página para añadir la tabla
       for (int i = 0; i < document.pages.count; i++) {
         final PdfPage page = document.pages[i];
         final Size pageSize = page.getClientSize();
@@ -106,14 +104,11 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
         );
       }
 
-      // Guarda el documento modificado en memoria
       final List<int> newPdfBytes = await document.save();
       document.dispose();
       
       if (mounted) {
-        setState(() => _isLoading = false); // Oculta el indicador de carga
-
-        // Navega a la pantalla de vista previa
+        setState(() => _isLoading = false);
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) =>
@@ -124,7 +119,6 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
 
     } catch (e) {
       if (mounted) {
-        // Si ocurre un error, oculta el indicador y muestra un mensaje
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error al procesar el PDF: $e')),
