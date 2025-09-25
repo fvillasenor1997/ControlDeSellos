@@ -52,6 +52,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       'department': 20.0,
       'stamp': 50.0,
       'signature': 25.0,
+      'date': 25.0, // Nueva fila
     },
   );
 
@@ -129,9 +130,10 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     final deptRowHeight = _config.rowHeights['department']!;
     final selloRowHeight = _config.rowHeights['stamp']!;
     final firmaRowHeight = _config.rowHeights['signature']!;
+    final dateRowHeight = _config.rowHeights['date']!; // Nueva fila
 
     final double footerHeight =
-        headerRowHeight + deptRowHeight + selloRowHeight + firmaRowHeight;
+        headerRowHeight + deptRowHeight + selloRowHeight + firmaRowHeight + dateRowHeight; // Nueva fila
     final double footerY = pageSize.height - footerHeight - bottomOffset;
 
     final PdfPen pen = PdfPen(PdfColor(0, 0, 0), width: 0.5);
@@ -151,6 +153,9 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     currentY += deptRowHeight;
     graphics.drawLine(pen, Offset(20, currentY + selloRowHeight),
         Offset(20 + footerWidth, currentY + selloRowHeight));
+    currentY += selloRowHeight;
+    graphics.drawLine(pen, Offset(20, currentY + firmaRowHeight), // Nueva línea
+        Offset(20 + footerWidth, currentY + firmaRowHeight));
 
     double currentX = 20;
     for (int i = 0; i < _config.departments.length; i++) {
@@ -190,6 +195,16 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       final colWidth = footerWidth * (dept['width'] / 100);
       _drawCellText(
           graphics, 'FIRMA', smallFont, currentX, colWidth, firmaY, firmaRowHeight, 
+          alignment: PdfTextAlignment.left, vAlignment: PdfVerticalAlignment.top);
+      currentX += colWidth;
+    }
+
+    final dateY = firmaY + firmaRowHeight; // Nueva fila
+    currentX = 20;
+    for (final dept in _config.departments) {
+      final colWidth = footerWidth * (dept['width'] / 100);
+      _drawCellText(
+          graphics, 'FECHA', smallFont, currentX, colWidth, dateY, dateRowHeight, 
           alignment: PdfTextAlignment.left, vAlignment: PdfVerticalAlignment.top);
       currentX += colWidth;
     }
