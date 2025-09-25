@@ -104,31 +104,40 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
 
   void _drawFooter(PdfGraphics graphics, Size pageSize, PdfFont font,
       PdfFont boldFont, PdfFont smallFont) {
+    // Conversión de cm a puntos PDF
     const double cmToPoints = 28.35;
-    const double bottomOffset = 30 + cmToPoints; // Subir la tabla 1 cm
+  
+    // Ajuste para subir toda la tabla 1 cm desde el borde inferior
+    const double bottomOffset = 30 + cmToPoints;
+    
+    // Definición de la altura de las filas
     const double headerRowHeight = 20;
     const double deptRowHeight = 20;
-    const double selloRowHeight = 50;
+    // --- LÍNEA MODIFICADA ---
+    // Se suman los 50 puntos originales + 1 cm (28.35 puntos) para aumentar el alto
+    const double selloRowHeight = 50 + cmToPoints; 
     const double firmaRowHeight = 25;
+    
+    // El alto total se calcula automáticamente
     const double footerHeight =
         headerRowHeight + deptRowHeight + selloRowHeight + firmaRowHeight;
     final double footerY = pageSize.height - footerHeight - bottomOffset;
-
+  
     final PdfPen pen = PdfPen(PdfColor(0, 0, 0), width: 0.5);
     final double footerWidth = pageSize.width - 40;
-
+  
     // Calcular anchos de columna
     final double col1Width = footerWidth * 0.49;
     final double col2Width = footerWidth * 0.17;
     final double col3Width = footerWidth * 0.17;
     final double col4Width = footerWidth * 0.17;
-
-    // Rectángulo
+  
+    // Rectángulo exterior
     graphics.drawRectangle(
       pen: pen,
       bounds: Rect.fromLTWH(20, footerY, footerWidth, footerHeight),
     );
-
+  
     // Líneas horizontales
     double currentY = footerY;
     graphics.drawLine(pen, Offset(20, currentY + headerRowHeight),
@@ -139,7 +148,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     currentY += deptRowHeight;
     graphics.drawLine(pen, Offset(20, currentY + selloRowHeight),
         Offset(20 + footerWidth, currentY + selloRowHeight));
-
+  
     // Líneas verticales
     double currentX = 20;
     currentX += col1Width;
@@ -151,8 +160,8 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     currentX += col3Width;
     graphics.drawLine(pen, Offset(currentX, footerY + headerRowHeight),
         Offset(currentX, footerY + footerHeight));
-
-
+  
+  
     // Texto
     _drawCellText(graphics, 'DEPARTAMENTOS', boldFont, 20, footerWidth, footerY,
         headerRowHeight);
@@ -169,8 +178,8 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     currentX += col3Width;
     _drawCellText(graphics, 'PRODUCCION', font, currentX, col4Width,
         footerY + headerRowHeight, deptRowHeight);
-
-
+  
+  
     final selloY = footerY + headerRowHeight + deptRowHeight;
     currentX = 20;
     _drawCellText(
@@ -188,7 +197,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
      _drawCellText(
         graphics, 'SELLO', smallFont, currentX, col4Width, selloY, selloRowHeight, 
         alignment: PdfTextAlignment.left, vAlignment: PdfVerticalAlignment.top);
-
+  
     final firmaY = selloY + selloRowHeight;
     currentX = 20;
     _drawCellText(
@@ -212,7 +221,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       double cellX, double cellWidth, double cellY, double cellHeight,
       {PdfTextAlignment alignment = PdfTextAlignment.center,
        PdfVerticalAlignment vAlignment = PdfVerticalAlignment.middle}) {
-        
+      
     double hPadding = 2;
     double vPadding = 2;
     
