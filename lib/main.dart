@@ -4,15 +4,15 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 
-// Importamos el paquete 'pdf' con un prefijo 'pw' para evitar conflictos.
-// Usaremos este para CREAR el nuevo documento y sus widgets.
+// Importamos el paquete 'pdf' para acceder a clases como PdfColors.
+import 'package:pdf/pdf.dart';
+// Importamos los widgets del paquete 'pdf' con un prefijo 'pw' para crear el documento.
 import 'package:pdf/widgets.dart' as pw;
 
-// Importamos el paquete 'printing' con un prefijo 'printing'.
-// Usaremos este para LEER el documento existente y para la PREVISUALIZACIÓN.
+// Importamos el paquete 'printing' para leer el PDF existente y para la vista previa.
 import 'package:printing/printing.dart';
 
-import 'pdf_preview_screen.dart'; // Este archivo no necesita cambios.
+import 'pdf_preview_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -67,29 +67,20 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       }
 
       final Uint8List pdfBytes = result.files.single.bytes!;
-
-      // 1. Usamos la clase Document del paquete 'pdf' (con prefijo pw) para CREAR el nuevo PDF.
       final pw.Document newPdf = pw.Document();
+      final PdfDocument existingPdf = await PdfDocument.openData(pdfBytes);
 
-      // 2. Usamos la clase PdfDocument del paquete 'printing' para LEER el PDF existente.
-      final printing.PdfDocument existingPdf = await printing.Printing.rasterize(pdfBytes);
+      for (int i = 0; i < existingPdf.pageCount; i++) {
+        final page = await existingPdf.getPage(i + 1);
+        final pageImage = pw.Image(page.image);
 
-      // 3. Iteramos sobre cada página del PDF original.
-      await for (var page in existingPdf.pages) {
-        // Obtenemos la imagen de la página.
-        final pw.Image pageImage = pw.Image(page.image);
-
-        // Agregamos una nueva página al documento que estamos creando.
         newPdf.addPage(
           pw.Page(
             pageFormat: page.pageFormat,
             build: (pw.Context context) {
-              // Usamos un Stack para poner el pie de página sobre la página original.
               return pw.Stack(
                 children: [
-                  // La página original como una imagen de fondo.
-                  pageImage,
-                  // Nuestro pie de página posicionado en la parte inferior.
+                  pw.Center(child: pageImage),
                   pw.Positioned(
                     bottom: 20,
                     left: 20,
@@ -103,7 +94,6 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
         );
       }
 
-      // 4. Guardamos el nuevo PDF en memoria.
       final Uint8List newPdfBytes = await newPdf.save();
 
       if (mounted) {
@@ -127,50 +117,79 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     }
   }
 
-  // Widget auxiliar para crear la tabla del pie de página.
+  // --- WIDGET DE PIE DE PÁGINA CORREGIDO ---
   pw.Widget _buildFooter() {
-    return pw.Table.fromTextArray(
-      border: pw.TableBorder.all(color: const PdfColor.fromInt(0xff000000), width: 0.5),
-      cellAlignment: pw.Alignment.center,
-      headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
-      headerDecoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xfff2f2f2)),
-      cellStyle: const pw.TextStyle(fontSize: 9),
-      columnWidths: {
-        0: const pw.FlexColumnWidth(1),
-        1: const pw.FlexColumnWidth(1),
-        2: const pw.FlexColumnWidth(1),
-        3: const pw.FlexColumnWidth(1),
-      },
-      // Definimos el contenido de la tabla
-      headers: ['DEPARTAMENTOS', '', '', ''], // Encabezado que abarca todas las columnas
-      data: [
-        ['METALURGIA', 'ALMACEN', 'CALIDAD', 'PRODUCCION'],
-        ['SELLO', 'SELLO', 'SELLO', 'SELLO'],
-        ['FIRMA', 'FIRMA', 'FIRMA', 'FIRMA'],
+    return pw.Table(
+      border: pw.TableBorder.all(width: 0.5),
+      children: [
+        // Fila 1: Encabezado principal que abarca 4 columnas
+        pw.TableRow(
+          children: [
+            pw.Container(
+              padding: const pw.EdgeInsets.all(4),
+              alignment: pw.Alignment.center,
+              child: pw.Text('DEPARTAMENTOS', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
+            ),
+            // Se crean celdas vacías que serán "ignoradas" por el span de la primera.
+            pw.Container(),
+            pw.Container(),
+            pw.Container(),
+          ],
+        ),
+        // Fila 2: Sub-encabezados
+        pw.TableRow(
+          children: [
+            pw.Container(padding: const pw.EdgeInsets.all(2), alignment: pw.Alignment.center, child: pw.Text('METALURGIA', style: const pw.TextStyle(fontSize: 9))),
+            pw.Container(padding: const pw.EdgeInsets.all(2), alignment: pw.Alignment.center, child: pw.Text('ALMACEN', style: const pw.TextStyle(fontSize: 9))),
+            pw.Container(padding: const pw.EdgeInsets.all(2), alignment: pw.Alignment.center, child: pw.Text('CALIDAD', style: const pw.TextStyle(fontSize: 9))),
+            pw.Container(padding: const pw.EdgeInsets.all(2), alignment: pw.Alignment.center, child: pw.Text('PRODUCCION', style: const pw.TextStyle(fontSize: 9))),
+          ],
+        ),
+        // Fila 3: Sello
+        pw.TableRow(
+          children: List.generate(4, (index) => 
+            pw.Container(
+              height: 25,
+              padding: const pw.EdgeInsets.all(2),
+              alignment: pw.Alignment.center,
+              child: pw.Text('SELLO', style: const pw.TextStyle(fontSize: 9))
+            )
+          ),
+        ),
+        // Fila 4: Firma
+        pw.TableRow(
+          children: List.generate(4, (index) => 
+            pw.Container(
+              height: 15,
+              padding: const pw.EdgeInsets.all(2),
+              alignment: pw.Alignment.center,
+              child: pw.Text('FIRMA', style: const pw.TextStyle(fontSize: 9))
+            )
+          ),
+        ),
       ],
-      // Personalización para que el encabezado "DEPARTAMENTOS" ocupe 4 columnas
-      headerCellBuilder: (context, index) {
-        if (index == 0) {
-          return pw.Container(
-            alignment: pw.Alignment.center,
-            padding: const pw.EdgeInsets.all(4),
-            child: pw.Text('DEPARTAMENTOS', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
-          );
-        }
-        return pw.Container(); // Celdas vacías para las otras columnas del encabezado
+      // Definimos que la primera celda de la primera fila ocupe 4 columnas
+      columnWidths: const {
+        0: pw.FlexColumnWidth(1),
+        1: pw.FlexColumnWidth(1),
+        2: pw.FlexColumnWidth(1),
+        3: pw.FlexColumnWidth(1),
       },
-      // Añadimos altura a las filas de SELLO y FIRMA
-      cellBuilder: (context, index, data) {
-        final height = (context.row == 2 || context.row == 3) ? 25.0 : 15.0;
-        return pw.Container(
-          height: height,
-          alignment: pw.Alignment.center,
-          child: pw.Text(data),
-        );
+      // Especificamos que la primera celda en la fila 0 debe abarcar 4 columnas.
+      cellDecorations: {
+        const pw.TableCellIndex(0, 0): const pw.BoxDecoration(
+          color: PdfColors.grey200,
+          border: pw.TableBorder(
+            bottom: pw.BorderSide(width: 0.5),
+            right: pw.BorderSide(width: 0.5),
+            left: pw.BorderSide(width: 0.5),
+            top: pw.BorderSide(width: 0.5),
+          ),
+        ),
       },
+      cellVerticalAlignment: pw.TableCellVerticalAlignment.middle,
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
