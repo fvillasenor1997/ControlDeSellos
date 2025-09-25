@@ -182,7 +182,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
         title: const Text('Agregar Pie de Página a PDF'),
       ),
       body: _isLoading
-          ? const Center(
+          ?  Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
