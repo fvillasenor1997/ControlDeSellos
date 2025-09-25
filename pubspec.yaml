@@ -1,23 +1,29 @@
 name: controldesellos
 description: "A new Flutter project."
-publish_to: 'none' 
+publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ">=2.19.0 <3.0.0"
+  sdk: ">=2.19.0 <3.4.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  # Librería principal para manipular PDF
-  syncfusion_flutter_pdf: ^26.1.35
-  # Para seleccionar el archivo
-  file_picker: 
-  # Para guardar el archivo en el dispositivo
-  path_provider: ^2.0.2
-  # Para abrir el archivo guardado y previsualizarlo
-  open_file: ^3.3.2
-  # Para la funcionalidad de arrastrar y soltar
+
+  # PDF
+  syncfusion_flutter_pdf: ^31.1.21
+  syncfusion_flutter_core: ^31.1.21
+
+  # Selección de archivos
+  file_picker: ^6.1.5
+
+  # Guardar archivos en dispositivo
+  path_provider: ^2.1.5
+
+  # Abrir archivos
+  open_file: ^3.5.10
+
+  # Arrastrar y soltar
   desktop_drop: ^0.4.4
 
 dev_dependencies:
