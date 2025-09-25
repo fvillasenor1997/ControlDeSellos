@@ -17,7 +17,8 @@ dependencies:
   path_provider: ^2.0.2
   # Para abrir el archivo guardado y previsualizarlo
   open_file: ^3.3.2
-
+  # Para la funcionalidad de arrastrar y soltar
+  desktop_drop: ^0.4.4
 
 dev_dependencies:
   flutter_test:
