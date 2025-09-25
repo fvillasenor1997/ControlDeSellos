@@ -181,18 +181,18 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       appBar: AppBar(
         title: const Text('Agregar Pie de Página a PDF'),
       ),
-      body: _isLoading
-          ?  Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 20),
-                  Text("Procesando PDF..."),
-                ],
-              ),
-            )
-          : const Center(
+  body: _isLoading
+      ? const Center( // <-- This 'const' is the problem
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(), // This widget isn't constant
+              SizedBox(height: 20),
+              Text("Procesando PDF..."),
+            ],
+          ),
+        )
+      : const Center(
               child: Padding(
                 padding: EdgeInsets.all(16.0),
                 child: Text(
