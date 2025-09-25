@@ -29,24 +29,17 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          flutter-version: '3.13.9' # Example of specifying a version
+          flutter-version: '3.19.6' # <-- Versión de Flutter actualizada
 
-      # 4. Limpia caches de Flutter y pub antes de instalar dependencias
-      - name: Clean Flutter & Pub cache
-        run: |
-          flutter clean
-          flutter pub cache repair
-          flutter pub get
+      # 4. Instala dependencias
+      - name: Install dependencies
+        run: flutter pub get
 
-      # 5. Run flutter doctor
-      - name: Run flutter doctor
-        run: flutter doctor -v
-
-      # 6. Compila el ejecutable de Windows
+      # 5. Compila el ejecutable de Windows
       - name: Build Windows EXE
         run: flutter build windows --release
 
-      # 7. Empaqueta los artefactos de la compilación
+      # 6. Empaqueta los artefactos de la compilación
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
