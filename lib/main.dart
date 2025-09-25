@@ -1,12 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:open_file/open_file.dart';
-import 'package:syncfusion_flutter_pdf/pdf.dart';
-import 'package:desktop_drop/desktop_drop.dart';
-import 'package:cross_file/cross_file.dart';
-import 'config_screen.dart'; // Importa la nueva pantalla
+import 'package.file_picker/file_picker.dart';
+import 'package.path_provider/path_provider.dart';
+import 'package.open_file/open_file.dart';
+import 'package.syncfusion_flutter_pdf/pdf.dart';
+import 'package.desktop_drop/desktop_drop.dart';
+import 'package.cross_file/cross_file.dart';
+import 'config_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -38,7 +38,12 @@ class PdfProcessingScreen extends StatefulWidget {
 class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
   bool _isLoading = false;
   bool _isDragOver = false;
-  List<String> _departments = ['METALURGIA', 'ALMACEN', 'CALIDAD', 'PRODUCCION'];
+  List<Map<String, dynamic>> _departments = [
+    {'name': 'METALURGIA', 'width': 49.0},
+    {'name': 'ALMACEN', 'width': 17.0},
+    {'name': 'CALIDAD', 'width': 17.0},
+    {'name': 'PRODUCCION', 'width': 17.0},
+  ];
 
   Future<void> _pickAndProcessPdf() async {
     final result = await FilePicker.platform.pickFiles(
@@ -120,8 +125,6 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     final PdfPen pen = PdfPen(PdfColor(0, 0, 0), width: 0.5);
     final double footerWidth = pageSize.width - 40;
 
-    final double colWidth = footerWidth / _departments.length;
-
     graphics.drawRectangle(
       pen: pen,
       bounds: Rect.fromLTWH(20, footerY, footerWidth, footerHeight),
@@ -137,25 +140,32 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     graphics.drawLine(pen, Offset(20, currentY + selloRowHeight),
         Offset(20 + footerWidth, currentY + selloRowHeight));
 
-    for (int i = 1; i < _departments.length; i++) {
-      double x = 20 + (i * colWidth);
-      graphics.drawLine(pen, Offset(x, footerY + headerRowHeight),
-          Offset(x, footerY + footerHeight));
+    double currentX = 20;
+    for (int i = 0; i < _departments.length; i++) {
+      final dept = _departments[i];
+      final colWidth = footerWidth * (dept['width'] / 100);
+      if (i < _departments.length - 1) {
+        currentX += colWidth;
+        graphics.drawLine(pen, Offset(currentX, footerY + headerRowHeight),
+            Offset(currentX, footerY + footerHeight));
+      }
     }
 
     _drawCellText(graphics, 'DEPARTAMENTOS', boldFont, 20, footerWidth, footerY,
         headerRowHeight);
     
-    double currentX = 20;
-    for (String dept in _departments) {
-      _drawCellText(graphics, dept, font, currentX, colWidth,
+    currentX = 20;
+    for (final dept in _departments) {
+      final colWidth = footerWidth * (dept['width'] / 100);
+      _drawCellText(graphics, dept['name'], font, currentX, colWidth,
           footerY + headerRowHeight, deptRowHeight);
       currentX += colWidth;
     }
 
     final selloY = footerY + headerRowHeight + deptRowHeight;
     currentX = 20;
-    for (int i = 0; i < _departments.length; i++) {
+    for (final dept in _departments) {
+      final colWidth = footerWidth * (dept['width'] / 100);
       _drawCellText(
           graphics, 'SELLO', smallFont, currentX, colWidth, selloY, selloRowHeight, 
           alignment: PdfTextAlignment.left, vAlignment: PdfVerticalAlignment.top);
@@ -164,7 +174,8 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
 
     final firmaY = selloY + selloRowHeight;
     currentX = 20;
-    for (int i = 0; i < _departments.length; i++) {
+    for (final dept in _departments) {
+      final colWidth = footerWidth * (dept['width'] / 100);
       _drawCellText(
           graphics, 'FIRMA', smallFont, currentX, colWidth, firmaY, firmaRowHeight, 
           alignment: PdfTextAlignment.left, vAlignment: PdfVerticalAlignment.top);
@@ -196,7 +207,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
   }
 
   void _openConfigScreen() async {
-    final result = await Navigator.of(context).push<List<String>>(
+    final result = await Navigator.of(context).push<List<Map<String, dynamic>>>(
       MaterialPageRoute(
         builder: (context) => ConfigScreen(initialDepartments: _departments),
       ),
