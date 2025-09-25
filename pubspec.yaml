@@ -9,11 +9,14 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  file_picker: ^5.5.0
-  pdf: ^3.10.8
-  printing: ^5.11.1
-  cupertino_icons: ^1.0.8
-
+  # Librería principal para manipular PDF
+  syncfusion_flutter_pdf: ^26.1.35
+  # Para seleccionar el archivo
+  file_picker: ^6.2.1
+  # Para guardar el archivo en el dispositivo
+  path_provider: ^2.0.2
+  # Para abrir el archivo guardado y previsualizarlo
+  open_file: ^3.3.2
 
   
 
