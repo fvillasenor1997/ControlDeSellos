@@ -63,20 +63,15 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
 
       final pdfBytes = result.files.single.bytes!;
       final newPdf = pw.Document();
-      final existingPdf = await Printing.convertUserInput(
-        format: PdfPageFormat.a4,
-        bytes: pdfBytes,
-      );
 
-      final pdfDocument = PdfDocument.openData(existingPdf);
-
-      for (var i = 1; i <= pdfDocument.pageCount; i++) {
-        final page = await pdfDocument.getPage(i);
-        final pageImage = pw.Image(pw.MemoryImage(page.image.bytes));
+      // We use Printing.rasterize to get each page of the PDF as an image.
+      await for (final page in Printing.rasterize(pdfBytes)) {
+        final pageImage = pw.Image(pw.MemoryImage(await page.toPng()));
 
         newPdf.addPage(
           pw.Page(
-            pageFormat: page.pageFormat,
+            // We get the page format from the rasterized page to preserve it.
+            pageFormat: PdfPageFormat(page.width, page.height),
             build: (pw.Context context) {
               return pw.Stack(
                 children: [
@@ -93,6 +88,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
           ),
         );
       }
+
 
       final newPdfBytes = await newPdf.save();
 
