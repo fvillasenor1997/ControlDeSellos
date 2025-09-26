@@ -151,7 +151,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     
     final Rect footerBounds = Rect.fromLTWH(0, footerY, page.getClientSize().width, footerHeight);
 
-    final PdfTextExtractor extractor = PdfTextExtractor(page);
+    final PdfTextExtractor extractor = PdfTextExtractor(page as PdfDocument);
     final List<TextLine> textLines = extractor.extractTextLines();
 
     for (final TextLine line in textLines) {
