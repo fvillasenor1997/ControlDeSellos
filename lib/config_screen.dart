@@ -15,6 +15,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
   final _nameController = TextEditingController();
   final _widthController = TextEditingController();
   late final Map<String, TextEditingController> _heightControllers;
+  late final Map<String, TextEditingController> _fixedTextControllers;
 
   @override
   void initState() {
@@ -25,7 +26,12 @@ class _ConfigScreenState extends State<ConfigScreen> {
       'department': TextEditingController(text: _config.rowHeights['department'].toString()),
       'stamp': TextEditingController(text: _config.rowHeights['stamp'].toString()),
       'signature': TextEditingController(text: _config.rowHeights['signature'].toString()),
-      'date': TextEditingController(text: _config.rowHeights['date'].toString()), // Nueva fila
+      'date': TextEditingController(text: _config.rowHeights['date'].toString()),
+    };
+    _fixedTextControllers = {
+      'stamp': TextEditingController(text: _config.fixedTexts['stamp']),
+      'signature': TextEditingController(text: _config.fixedTexts['signature']),
+      'date': TextEditingController(text: _config.fixedTexts['date']),
     };
   }
 
@@ -57,9 +63,15 @@ class _ConfigScreenState extends State<ConfigScreen> {
       'department': double.tryParse(_heightControllers['department']!.text) ?? 20.0,
       'stamp': double.tryParse(_heightControllers['stamp']!.text) ?? 50.0,
       'signature': double.tryParse(_heightControllers['signature']!.text) ?? 25.0,
-      'date': double.tryParse(_heightControllers['date']!.text) ?? 25.0, // Nueva fila
+      'date': double.tryParse(_heightControllers['date']!.text) ?? 25.0,
+    };
+    final newFixedTexts = {
+      'stamp': _fixedTextControllers['stamp']!.text,
+      'signature': _fixedTextControllers['signature']!.text,
+      'date': _fixedTextControllers['date']!.text,
     };
     _config.rowHeights = newHeights;
+    _config.fixedTexts = newFixedTexts;
     Navigator.of(context).pop(_config);
   }
 
@@ -142,10 +154,24 @@ class _ConfigScreenState extends State<ConfigScreen> {
                 decoration: const InputDecoration(labelText: 'Altura de la firma'),
                 keyboardType: TextInputType.number,
               ),
-              TextField( // Nueva fila
+              TextField(
                 controller: _heightControllers['date'],
                 decoration: const InputDecoration(labelText: 'Altura de la fecha'),
                 keyboardType: TextInputType.number,
+              ),
+              const Divider(),
+              const Text('Textos Fijos', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              TextField(
+                controller: _fixedTextControllers['stamp'],
+                decoration: const InputDecoration(labelText: 'Texto para Sello'),
+              ),
+              TextField(
+                controller: _fixedTextControllers['signature'],
+                decoration: const InputDecoration(labelText: 'Texto para Firma'),
+              ),
+              TextField(
+                controller: _fixedTextControllers['date'],
+                decoration: const InputDecoration(labelText: 'Texto para Fecha'),
               ),
             ],
           ),
