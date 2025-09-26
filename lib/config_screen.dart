@@ -15,7 +15,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
   final _nameController = TextEditingController();
   final _widthController = TextEditingController();
   late final Map<String, TextEditingController> _heightControllers;
-  late List<Map<String, TextEditingController>> _departmentTextControllers;
+  late List<Map<String, TextEditingController>> _departmentControllers;
 
   @override
   void initState() {
@@ -29,11 +29,14 @@ class _ConfigScreenState extends State<ConfigScreen> {
       'date': TextEditingController(text: _config.rowHeights['date'].toString()),
     };
 
-    _departmentTextControllers = _config.departments.map((dept) {
+    _departmentControllers = _config.departments.map((dept) {
       return {
-        'stamp': TextEditingController(text: dept['stamp_text']),
-        'signature': TextEditingController(text: dept['signature_text']),
-        'date': TextEditingController(text: dept['date_text']),
+        'stamp_text': TextEditingController(text: dept['stamp_text']),
+        'stamp_font_size': TextEditingController(text: dept['stamp_font_size'].toString()),
+        'signature_text': TextEditingController(text: dept['signature_text']),
+        'signature_font_size': TextEditingController(text: dept['signature_font_size'].toString()),
+        'date_text': TextEditingController(text: dept['date_text']),
+        'date_font_size': TextEditingController(text: dept['date_font_size'].toString()),
       };
     }).toList();
   }
@@ -43,7 +46,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
     _nameController.dispose();
     _widthController.dispose();
     _heightControllers.values.forEach((controller) => controller.dispose());
-    for (var controllerMap in _departmentTextControllers) {
+    for (var controllerMap in _departmentControllers) {
       controllerMap.values.forEach((controller) => controller.dispose());
     }
     super.dispose();
@@ -54,17 +57,21 @@ class _ConfigScreenState extends State<ConfigScreen> {
       final width = double.tryParse(_widthController.text);
       if (width != null) {
         setState(() {
-          _config.departments.add({
+          final newDept = {
             'name': _nameController.text,
             'width': width,
-            'stamp_text': 'SELLO',
-            'signature_text': 'FIRMA',
-            'date_text': 'FECHA',
-          });
-          _departmentTextControllers.add({
-            'stamp': TextEditingController(text: 'SELLO'),
-            'signature': TextEditingController(text: 'FIRMA'),
-            'date': TextEditingController(text: 'FECHA'),
+            'stamp_text': 'SELLO', 'stamp_font_size': 6.0,
+            'signature_text': 'FIRMA', 'signature_font_size': 6.0,
+            'date_text': 'FECHA', 'date_font_size': 6.0,
+          };
+          _config.departments.add(newDept);
+          _departmentControllers.add({
+            'stamp_text': TextEditingController(text: newDept['stamp_text']),
+            'stamp_font_size': TextEditingController(text: newDept['stamp_font_size'].toString()),
+            'signature_text': TextEditingController(text: newDept['signature_text']),
+            'signature_font_size': TextEditingController(text: newDept['signature_font_size'].toString()),
+            'date_text': TextEditingController(text: newDept['date_text']),
+            'date_font_size': TextEditingController(text: newDept['date_font_size'].toString()),
           });
           _nameController.clear();
           _widthController.clear();
@@ -75,26 +82,28 @@ class _ConfigScreenState extends State<ConfigScreen> {
 
   void _removeDepartment(int index) {
     setState(() {
-      _departmentTextControllers[index].values.forEach((c) => c.dispose());
-      _departmentTextControllers.removeAt(index);
+      _departmentControllers[index].values.forEach((c) => c.dispose());
+      _departmentControllers.removeAt(index);
       _config.departments.removeAt(index);
     });
   }
 
   void _saveConfig() {
-    final newHeights = {
+    _config.rowHeights = {
       'header': double.tryParse(_heightControllers['header']!.text) ?? 20.0,
       'department': double.tryParse(_heightControllers['department']!.text) ?? 20.0,
       'stamp': double.tryParse(_heightControllers['stamp']!.text) ?? 50.0,
       'signature': double.tryParse(_heightControllers['signature']!.text) ?? 25.0,
       'date': double.tryParse(_heightControllers['date']!.text) ?? 25.0,
     };
-    _config.rowHeights = newHeights;
 
     for (int i = 0; i < _config.departments.length; i++) {
-      _config.departments[i]['stamp_text'] = _departmentTextControllers[i]['stamp']!.text;
-      _config.departments[i]['signature_text'] = _departmentTextControllers[i]['signature']!.text;
-      _config.departments[i]['date_text'] = _departmentTextControllers[i]['date']!.text;
+      _config.departments[i]['stamp_text'] = _departmentControllers[i]['stamp_text']!.text;
+      _config.departments[i]['stamp_font_size'] = double.tryParse(_departmentControllers[i]['stamp_font_size']!.text) ?? 6.0;
+      _config.departments[i]['signature_text'] = _departmentControllers[i]['signature_text']!.text;
+      _config.departments[i]['signature_font_size'] = double.tryParse(_departmentControllers[i]['signature_font_size']!.text) ?? 6.0;
+      _config.departments[i]['date_text'] = _departmentControllers[i]['date_text']!.text;
+      _config.departments[i]['date_font_size'] = double.tryParse(_departmentControllers[i]['date_font_size']!.text) ?? 6.0;
     }
 
     Navigator.of(context).pop(_config);
@@ -158,23 +167,23 @@ class _ConfigScreenState extends State<ConfigScreen> {
                       ),
                       children: [
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                           child: Column(
                             children: [
-                              TextField(
-                                controller: _departmentTextControllers[index]['stamp'],
-                                decoration: const InputDecoration(labelText: 'Texto de Sello'),
-                              ),
+                              _buildTextAndSizeRow(
+                                  _departmentControllers[index]['stamp_text']!,
+                                  _departmentControllers[index]['stamp_font_size']!,
+                                  'Texto de Sello'),
                               const SizedBox(height: 8),
-                              TextField(
-                                controller: _departmentTextControllers[index]['signature'],
-                                decoration: const InputDecoration(labelText: 'Texto de Firma'),
-                              ),
+                              _buildTextAndSizeRow(
+                                  _departmentControllers[index]['signature_text']!,
+                                  _departmentControllers[index]['signature_font_size']!,
+                                  'Texto de Firma'),
                               const SizedBox(height: 8),
-                              TextField(
-                                controller: _departmentTextControllers[index]['date'],
-                                decoration: const InputDecoration(labelText: 'Texto de Fecha'),
-                              ),
+                              _buildTextAndSizeRow(
+                                  _departmentControllers[index]['date_text']!,
+                                  _departmentControllers[index]['date_font_size']!,
+                                  'Texto de Fecha'),
                             ],
                           ),
                         ),
@@ -214,6 +223,31 @@ class _ConfigScreenState extends State<ConfigScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTextAndSizeRow(TextEditingController textController, TextEditingController sizeController, String label) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Expanded(
+          child: TextField(
+            controller: textController,
+            decoration: InputDecoration(labelText: label),
+            keyboardType: TextInputType.multiline,
+            maxLines: null,
+          ),
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 60,
+          child: TextField(
+            controller: sizeController,
+            decoration: const InputDecoration(labelText: 'Tamaño'),
+            keyboardType: TextInputType.number,
+          ),
+        ),
+      ],
     );
   }
 }
