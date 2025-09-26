@@ -39,13 +39,37 @@ class PdfProcessingScreen extends StatefulWidget {
 class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
   bool _isLoading = false;
   bool _isDragOver = false;
-  
+
   ConfigModel _config = ConfigModel(
     departments: [
-      {'name': 'METALURGIA', 'width': 49.0},
-      {'name': 'ALMACEN', 'width': 17.0},
-      {'name': 'CALIDAD', 'width': 17.0},
-      {'name': 'PRODUCCION', 'width': 17.0},
+      {
+        'name': 'METALURGIA',
+        'width': 49.0,
+        'stamp_text': 'SELLO',
+        'signature_text': 'FIRMA',
+        'date_text': 'FECHA'
+      },
+      {
+        'name': 'ALMACEN',
+        'width': 17.0,
+        'stamp_text': 'SELLO',
+        'signature_text': 'FIRMA',
+        'date_text': 'FECHA'
+      },
+      {
+        'name': 'CALIDAD',
+        'width': 17.0,
+        'stamp_text': 'SELLO',
+        'signature_text': 'FIRMA',
+        'date_text': 'FECHA'
+      },
+      {
+        'name': 'PRODUCCION',
+        'width': 17.0,
+        'stamp_text': 'SELLO',
+        'signature_text': 'FIRMA',
+        'date_text': 'FECHA'
+      },
     ],
     rowHeights: {
       'header': 20.0,
@@ -53,11 +77,6 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       'stamp': 50.0,
       'signature': 25.0,
       'date': 25.0,
-    },
-    fixedTexts: {
-      'stamp': 'SELLO',
-      'signature': 'FIRMA',
-      'date': 'FECHA',
     },
   );
 
@@ -130,7 +149,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       PdfFont boldFont, PdfFont smallFont) {
     const double cmToPoints = 28.35;
     const double bottomOffset = 30 + cmToPoints;
-    
+
     final headerRowHeight = _config.rowHeights['header']!;
     final deptRowHeight = _config.rowHeights['department']!;
     final selloRowHeight = _config.rowHeights['stamp']!;
@@ -175,7 +194,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
 
     _drawCellText(graphics, 'DEPARTAMENTOS', boldFont, 20, footerWidth, footerY,
         headerRowHeight);
-    
+
     currentX = 20;
     for (final dept in _config.departments) {
       final colWidth = footerWidth * (dept['width'] / 100);
@@ -189,7 +208,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     for (final dept in _config.departments) {
       final colWidth = footerWidth * (dept['width'] / 100);
       _drawCellText(
-          graphics, _config.fixedTexts['stamp']!, smallFont, currentX, colWidth, selloY, selloRowHeight, 
+          graphics, dept['stamp_text'] ?? '', smallFont, currentX, colWidth, selloY, selloRowHeight,
           alignment: PdfTextAlignment.left, vAlignment: PdfVerticalAlignment.top);
       currentX += colWidth;
     }
@@ -199,7 +218,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     for (final dept in _config.departments) {
       final colWidth = footerWidth * (dept['width'] / 100);
       _drawCellText(
-          graphics, _config.fixedTexts['signature']!, smallFont, currentX, colWidth, firmaY, firmaRowHeight, 
+          graphics, dept['signature_text'] ?? '', smallFont, currentX, colWidth, firmaY, firmaRowHeight,
           alignment: PdfTextAlignment.left, vAlignment: PdfVerticalAlignment.top);
       currentX += colWidth;
     }
@@ -209,7 +228,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     for (final dept in _config.departments) {
       final colWidth = footerWidth * (dept['width'] / 100);
       _drawCellText(
-          graphics, _config.fixedTexts['date']!, smallFont, currentX, colWidth, dateY, dateRowHeight, 
+          graphics, dept['date_text'] ?? '', smallFont, currentX, colWidth, dateY, dateRowHeight,
           alignment: PdfTextAlignment.left, vAlignment: PdfVerticalAlignment.top);
       currentX += colWidth;
     }
@@ -219,10 +238,10 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       double cellX, double cellWidth, double cellY, double cellHeight,
       {PdfTextAlignment alignment = PdfTextAlignment.center,
        PdfVerticalAlignment vAlignment = PdfVerticalAlignment.middle}) {
-        
+
     double hPadding = 2;
     double vPadding = 2;
-    
+
     Rect cellBounds = Rect.fromLTWH(cellX, cellY, cellWidth, cellHeight);
 
     Rect paddedBounds = Rect.fromLTWH(
