@@ -5,9 +5,11 @@ import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:desktop_drop/desktop_drop.dart';
-import 'package:cross_file/cross_file.dart';
 import 'config_model.dart';
 import 'config_screen.dart';
+import 'config_service.dart'; // Importa el nuevo servicio
+import 'package:cross_file/cross_file.dart';
+
 
 void main() {
   runApp(const MyApp());
@@ -39,46 +41,19 @@ class PdfProcessingScreen extends StatefulWidget {
 class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
   bool _isLoading = false;
   bool _isDragOver = false;
+  final ConfigService _configService = ConfigService();
+  late ConfigModel _config;
 
-  ConfigModel _config = ConfigModel(
-    departments: [
-      {
-        'name': 'METALURGIA',
-        'width': 49.0,
-        'stamp_text': 'SELLO', 'stamp_font_size': 6.0,
-        'signature_text': 'FIRMA', 'signature_font_size': 6.0,
-        'date_text': 'FECHA', 'date_font_size': 6.0,
-      },
-      {
-        'name': 'ALMACEN',
-        'width': 17.0,
-        'stamp_text': 'SELLO', 'stamp_font_size': 6.0,
-        'signature_text': 'FIRMA', 'signature_font_size': 6.0,
-        'date_text': 'FECHA', 'date_font_size': 6.0,
-      },
-      {
-        'name': 'CALIDAD',
-        'width': 17.0,
-        'stamp_text': 'SELLO', 'stamp_font_size': 6.0,
-        'signature_text': 'FIRMA', 'signature_font_size': 6.0,
-        'date_text': 'FECHA', 'date_font_size': 6.0,
-      },
-      {
-        'name': 'PRODUCCION',
-        'width': 17.0,
-        'stamp_text': 'SELLO', 'stamp_font_size': 6.0,
-        'signature_text': 'FIRMA', 'signature_font_size': 6.0,
-        'date_text': 'FECHA', 'date_font_size': 6.0,
-      },
-    ],
-    rowHeights: {
-      'header': 20.0,
-      'department': 20.0,
-      'stamp': 50.0,
-      'signature': 25.0,
-      'date': 25.0,
-    },
-  );
+  @override
+  void initState() {
+    super.initState();
+    _loadConfig();
+  }
+
+  Future<void> _loadConfig() async {
+    _config = await _configService.loadConfig();
+    setState(() {});
+  }
 
   Future<void> _pickAndProcessPdf() async {
     final result = await FilePicker.platform.pickFiles(
@@ -262,16 +237,56 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
   }
 
   void _openConfigScreen() async {
-    final result = await Navigator.of(context).push<ConfigModel>(
-      MaterialPageRoute(
-        builder: (context) => ConfigScreen(initialConfig: _config),
+    final passwordController = TextEditingController();
+    final isPasswordCorrect = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Contraseña'),
+        content: TextField(
+          controller: passwordController,
+          obscureText: true,
+          decoration: const InputDecoration(labelText: 'Introduce la contraseña'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () async {
+              final isCorrect = await _configService.checkPassword(passwordController.text);
+              if(mounted) Navigator.of(context).pop(isCorrect);
+            },
+            child: const Text('Aceptar'),
+          ),
+        ],
       ),
     );
 
-    if (result != null) {
-      setState(() {
-        _config = result;
-      });
+    if (isPasswordCorrect == true) {
+      final result = await Navigator.of(context).push<ConfigModel>(
+        MaterialPageRoute(
+          builder: (context) => ConfigScreen(initialConfig: _config),
+        ),
+      );
+
+      if (result != null) {
+        setState(() {
+          _config = result;
+        });
+        await _configService.saveConfig(_config); // Guarda la configuración
+        if(mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Configuración guardada')),
+          );
+        }
+      }
+    } else if (isPasswordCorrect != null) {
+      if(mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Contraseña incorrecta')),
+        );
+      }
     }
   }
 
