@@ -52,7 +52,12 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       'department': 20.0,
       'stamp': 50.0,
       'signature': 25.0,
-      'date': 25.0, // Nueva fila
+      'date': 25.0,
+    },
+    fixedTexts: {
+      'stamp': 'SELLO',
+      'signature': 'FIRMA',
+      'date': 'FECHA',
     },
   );
 
@@ -130,10 +135,10 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     final deptRowHeight = _config.rowHeights['department']!;
     final selloRowHeight = _config.rowHeights['stamp']!;
     final firmaRowHeight = _config.rowHeights['signature']!;
-    final dateRowHeight = _config.rowHeights['date']!; // Nueva fila
+    final dateRowHeight = _config.rowHeights['date']!;
 
     final double footerHeight =
-        headerRowHeight + deptRowHeight + selloRowHeight + firmaRowHeight + dateRowHeight; // Nueva fila
+        headerRowHeight + deptRowHeight + selloRowHeight + firmaRowHeight + dateRowHeight;
     final double footerY = pageSize.height - footerHeight - bottomOffset;
 
     final PdfPen pen = PdfPen(PdfColor(0, 0, 0), width: 0.5);
@@ -154,7 +159,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     graphics.drawLine(pen, Offset(20, currentY + selloRowHeight),
         Offset(20 + footerWidth, currentY + selloRowHeight));
     currentY += selloRowHeight;
-    graphics.drawLine(pen, Offset(20, currentY + firmaRowHeight), // Nueva línea
+    graphics.drawLine(pen, Offset(20, currentY + firmaRowHeight),
         Offset(20 + footerWidth, currentY + firmaRowHeight));
 
     double currentX = 20;
@@ -184,7 +189,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     for (final dept in _config.departments) {
       final colWidth = footerWidth * (dept['width'] / 100);
       _drawCellText(
-          graphics, 'SELLO', smallFont, currentX, colWidth, selloY, selloRowHeight, 
+          graphics, _config.fixedTexts['stamp']!, smallFont, currentX, colWidth, selloY, selloRowHeight, 
           alignment: PdfTextAlignment.left, vAlignment: PdfVerticalAlignment.top);
       currentX += colWidth;
     }
@@ -194,17 +199,17 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     for (final dept in _config.departments) {
       final colWidth = footerWidth * (dept['width'] / 100);
       _drawCellText(
-          graphics, 'FIRMA', smallFont, currentX, colWidth, firmaY, firmaRowHeight, 
+          graphics, _config.fixedTexts['signature']!, smallFont, currentX, colWidth, firmaY, firmaRowHeight, 
           alignment: PdfTextAlignment.left, vAlignment: PdfVerticalAlignment.top);
       currentX += colWidth;
     }
 
-    final dateY = firmaY + firmaRowHeight; // Nueva fila
+    final dateY = firmaY + firmaRowHeight;
     currentX = 20;
     for (final dept in _config.departments) {
       final colWidth = footerWidth * (dept['width'] / 100);
       _drawCellText(
-          graphics, 'FECHA', smallFont, currentX, colWidth, dateY, dateRowHeight, 
+          graphics, _config.fixedTexts['date']!, smallFont, currentX, colWidth, dateY, dateRowHeight, 
           alignment: PdfTextAlignment.left, vAlignment: PdfVerticalAlignment.top);
       currentX += colWidth;
     }
