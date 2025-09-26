@@ -45,30 +45,30 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       {
         'name': 'METALURGIA',
         'width': 49.0,
-        'stamp_text': 'SELLO',
-        'signature_text': 'FIRMA',
-        'date_text': 'FECHA'
+        'stamp_text': 'SELLO', 'stamp_font_size': 6.0,
+        'signature_text': 'FIRMA', 'signature_font_size': 6.0,
+        'date_text': 'FECHA', 'date_font_size': 6.0,
       },
       {
         'name': 'ALMACEN',
         'width': 17.0,
-        'stamp_text': 'SELLO',
-        'signature_text': 'FIRMA',
-        'date_text': 'FECHA'
+        'stamp_text': 'SELLO', 'stamp_font_size': 6.0,
+        'signature_text': 'FIRMA', 'signature_font_size': 6.0,
+        'date_text': 'FECHA', 'date_font_size': 6.0,
       },
       {
         'name': 'CALIDAD',
         'width': 17.0,
-        'stamp_text': 'SELLO',
-        'signature_text': 'FIRMA',
-        'date_text': 'FECHA'
+        'stamp_text': 'SELLO', 'stamp_font_size': 6.0,
+        'signature_text': 'FIRMA', 'signature_font_size': 6.0,
+        'date_text': 'FECHA', 'date_font_size': 6.0,
       },
       {
         'name': 'PRODUCCION',
         'width': 17.0,
-        'stamp_text': 'SELLO',
-        'signature_text': 'FIRMA',
-        'date_text': 'FECHA'
+        'stamp_text': 'SELLO', 'stamp_font_size': 6.0,
+        'signature_text': 'FIRMA', 'signature_font_size': 6.0,
+        'date_text': 'FECHA', 'date_font_size': 6.0,
       },
     ],
     rowHeights: {
@@ -109,12 +109,11 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       final PdfFont font = PdfStandardFont(PdfFontFamily.helvetica, 9);
       final PdfFont boldFont =
           PdfStandardFont(PdfFontFamily.helvetica, 10, style: PdfFontStyle.bold);
-      final PdfFont smallFont = PdfStandardFont(PdfFontFamily.helvetica, 6);
 
       for (int i = 0; i < document.pages.count; i++) {
         final PdfPage page = document.pages[i];
         final PdfGraphics graphics = page.graphics;
-        _drawFooter(graphics, page.getClientSize(), font, boldFont, smallFont);
+        _drawFooter(graphics, page.getClientSize(), font, boldFont);
       }
 
       final List<int> newPdfBytes = await document.save();
@@ -146,7 +145,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
   }
 
   void _drawFooter(PdfGraphics graphics, Size pageSize, PdfFont font,
-      PdfFont boldFont, PdfFont smallFont) {
+      PdfFont boldFont) {
     const double cmToPoints = 28.35;
     const double bottomOffset = 30 + cmToPoints;
 
@@ -207,8 +206,9 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     currentX = 20;
     for (final dept in _config.departments) {
       final colWidth = footerWidth * (dept['width'] / 100);
+      final font = PdfStandardFont(PdfFontFamily.helvetica, dept['stamp_font_size']);
       _drawCellText(
-          graphics, dept['stamp_text'] ?? '', smallFont, currentX, colWidth, selloY, selloRowHeight,
+          graphics, dept['stamp_text'] ?? '', font, currentX, colWidth, selloY, selloRowHeight,
           alignment: PdfTextAlignment.left, vAlignment: PdfVerticalAlignment.top);
       currentX += colWidth;
     }
@@ -217,8 +217,9 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     currentX = 20;
     for (final dept in _config.departments) {
       final colWidth = footerWidth * (dept['width'] / 100);
+      final font = PdfStandardFont(PdfFontFamily.helvetica, dept['signature_font_size']);
       _drawCellText(
-          graphics, dept['signature_text'] ?? '', smallFont, currentX, colWidth, firmaY, firmaRowHeight,
+          graphics, dept['signature_text'] ?? '', font, currentX, colWidth, firmaY, firmaRowHeight,
           alignment: PdfTextAlignment.left, vAlignment: PdfVerticalAlignment.top);
       currentX += colWidth;
     }
@@ -227,8 +228,9 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     currentX = 20;
     for (final dept in _config.departments) {
       final colWidth = footerWidth * (dept['width'] / 100);
+      final font = PdfStandardFont(PdfFontFamily.helvetica, dept['date_font_size']);
       _drawCellText(
-          graphics, dept['date_text'] ?? '', smallFont, currentX, colWidth, dateY, dateRowHeight,
+          graphics, dept['date_text'] ?? '', font, currentX, colWidth, dateY, dateRowHeight,
           alignment: PdfTextAlignment.left, vAlignment: PdfVerticalAlignment.top);
       currentX += colWidth;
     }
@@ -242,6 +244,8 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     double hPadding = 2;
     double vPadding = 2;
 
+    final processedText = text.replaceAll('\t', '    ');
+
     Rect cellBounds = Rect.fromLTWH(cellX, cellY, cellWidth, cellHeight);
 
     Rect paddedBounds = Rect.fromLTWH(
@@ -250,7 +254,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
         cellBounds.width - (hPadding * 2),
         cellBounds.height - (vPadding * 2));
 
-    graphics.drawString(text, font,
+    graphics.drawString(processedText, font,
         bounds: paddedBounds,
         format: PdfStringFormat(
             alignment: alignment,
