@@ -31,11 +31,11 @@ class _ConfigScreenState extends State<ConfigScreen> {
 
     _departmentControllers = _config.departments.map((dept) {
       return {
-        'stamp_text': TextEditingController(text: dept['stamp_text']),
+        'stamp_text': TextEditingController(text: dept['stamp_text'] as String),
         'stamp_font_size': TextEditingController(text: dept['stamp_font_size'].toString()),
-        'signature_text': TextEditingController(text: dept['signature_text']),
+        'signature_text': TextEditingController(text: dept['signature_text'] as String),
         'signature_font_size': TextEditingController(text: dept['signature_font_size'].toString()),
-        'date_text': TextEditingController(text: dept['date_text']),
+        'date_text': TextEditingController(text: dept['date_text'] as String),
         'date_font_size': TextEditingController(text: dept['date_font_size'].toString()),
       };
     }).toList();
@@ -66,11 +66,11 @@ class _ConfigScreenState extends State<ConfigScreen> {
           };
           _config.departments.add(newDept);
           _departmentControllers.add({
-            'stamp_text': TextEditingController(text: newDept['stamp_text']),
+            'stamp_text': TextEditingController(text: newDept['stamp_text'] as String),
             'stamp_font_size': TextEditingController(text: newDept['stamp_font_size'].toString()),
-            'signature_text': TextEditingController(text: newDept['signature_text']),
+            'signature_text': TextEditingController(text: newDept['signature_text'] as String),
             'signature_font_size': TextEditingController(text: newDept['signature_font_size'].toString()),
-            'date_text': TextEditingController(text: newDept['date_text']),
+            'date_text': TextEditingController(text: newDept['date_text'] as String),
             'date_font_size': TextEditingController(text: newDept['date_font_size'].toString()),
           });
           _nameController.clear();
@@ -159,7 +159,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
                   return Card(
                     margin: const EdgeInsets.symmetric(vertical: 4.0),
                     child: ExpansionTile(
-                      title: Text(_config.departments[index]['name']),
+                      title: Text(_config.departments[index]['name'] as String),
                       subtitle: Text('Ancho: ${_config.departments[index]['width']}%'),
                       trailing: IconButton(
                         icon: const Icon(Icons.delete, color: Colors.red),
