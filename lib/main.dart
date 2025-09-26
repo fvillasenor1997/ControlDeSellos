@@ -85,10 +85,26 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       final PdfFont boldFont =
           PdfStandardFont(PdfFontFamily.helvetica, 10, style: PdfFontStyle.bold);
 
+      bool overlapDetected = false;
       for (int i = 0; i < document.pages.count; i++) {
-        final PdfPage page = document.pages[i];
-        final PdfGraphics graphics = page.graphics;
-        _drawFooter(graphics, page.getClientSize(), font, boldFont);
+        if (_isTextInFooterArea(document.pages[i])) {
+          overlapDetected = true;
+          break;
+        }
+      }
+
+      if (overlapDetected) {
+        // Si hay superposición, añade una nueva página para el pie de página
+        final PdfPage newPage = document.pages.add();
+        final PdfGraphics graphics = newPage.graphics;
+        _drawFooter(graphics, newPage.getClientSize(), font, boldFont);
+      } else {
+        // Si no hay superposición, dibuja el pie de página en cada página
+        for (int i = 0; i < document.pages.count; i++) {
+          final PdfPage page = document.pages[i];
+          final PdfGraphics graphics = page.graphics;
+          _drawFooter(graphics, page.getClientSize(), font, boldFont);
+        }
       }
 
       final List<int> newPdfBytes = await document.save();
@@ -117,6 +133,36 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  bool _isTextInFooterArea(PdfPage page) {
+    const double cmToPoints = 28.35;
+    const double bottomOffset = 30 + cmToPoints;
+
+    final headerRowHeight = _config.rowHeights['header']!;
+    final deptRowHeight = _config.rowHeights['department']!;
+    final selloRowHeight = _config.rowHeights['stamp']!;
+    final firmaRowHeight = _config.rowHeights['signature']!;
+    final dateRowHeight = _config.rowHeights['date']!;
+
+    final double footerHeight =
+        headerRowHeight + deptRowHeight + selloRowHeight + firmaRowHeight + dateRowHeight;
+    final double footerY = page.getClientSize().height - footerHeight - bottomOffset;
+    
+    final Rect footerBounds = Rect.fromLTWH(0, footerY, page.getClientSize().width, footerHeight);
+
+    final PdfTextExtractor extractor = PdfTextExtractor(page);
+    final List<TextLine> textLines = extractor.extractTextLines();
+
+    for (final TextLine line in textLines) {
+      for (final TextWord word in line.wordCollection) {
+        if (footerBounds.overlaps(word.bounds)) {
+          return true;
+        }
+      }
+    }
+    
+    return false;
   }
 
   void _drawFooter(PdfGraphics graphics, Size pageSize, PdfFont font,
