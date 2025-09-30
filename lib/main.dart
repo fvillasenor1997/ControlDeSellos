@@ -96,10 +96,10 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
           final pdf.PdfPage newPage = document.pages.insert(i + 1, page.size);
           final newPageSize = Size(newPage.getClientSize().width, newPage.getClientSize().height);
 
-          // ✅ Copiar encabezado de la página original
+          // Copiar encabezado de la página original
           await _copyHeaderToNewPage(filePath, i + 1, newPage, newPageSize);
 
-          // ✅ Dibujar tabla en la nueva hoja
+          // Dibujar tabla en la nueva hoja
           _drawFooter(newPage.graphics, newPageSize, font, boldFont);
         } else {
           _drawFooter(page.graphics, pageSize, font, boldFont);
@@ -134,7 +134,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     }
   }
 
-  /// ✅ Corregido: Copiar encabezado desde la página original a la nueva
+  /// Copiar encabezado desde la página original a la nueva
   Future<void> _copyHeaderToNewPage(
       String filePath, int pageNumber, pdf.PdfPage newPage, Size pageSize) async {
     try {
@@ -155,8 +155,8 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       final img.Image? image = img.decodeImage(pageImage.bytes);
       if (image == null) return;
 
-      // 📌 Altura de encabezado desde configuración
-      final int headerHeight = _config.rowHeights['header']!.toInt();
+      // Altura de encabezado desde configuración
+      final int headerHeight = _config.copiedHeaderHeight.toInt();
 
       // Recortamos la parte superior de la página (encabezado)
       final img.Image headerCrop = img.copyCrop(
@@ -171,7 +171,6 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       final headerBytes = img.encodePng(headerCrop);
       final pdf.PdfBitmap headerBitmap = pdf.PdfBitmap(headerBytes);
 
-      // ✅ Corregido: usar Rect.fromLTWH en vez de pasar 5 argumentos
       newPage.graphics.drawImage(
         headerBitmap,
         Rect.fromLTWH(
@@ -186,9 +185,6 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       debugPrint(s.toString());
     }
   }
-
-  // --- resto de tu código (isAreaOccupied, drawFooter, drawCellText, openConfigScreen, build) sin cambios ---
-  // (Lo dejé igual porque no estaba relacionado con el error)
 
   Rect _getFooterBounds(Size pageSize) {
     const double cmToPoints = 28.35;
