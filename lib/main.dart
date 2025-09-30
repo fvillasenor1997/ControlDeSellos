@@ -7,7 +7,7 @@ import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'config_model.dart';
 import 'config_screen.dart';
-import 'config_service.dart'; // Importa el nuevo servicio
+import 'config_service.dart';
 import 'package:cross_file/cross_file.dart';
 
 
@@ -87,7 +87,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
 
       for (int i = document.pages.count - 1; i >= 0; i--) {
         final PdfPage page = document.pages[i];
-        if (_isTextInFooterArea(page)) {
+        if (_isTextInFooterArea(document, i)) {
           // Si hay superposición, inserta una nueva página después de la actual
           final PdfPage newPage = document.pages.insert(i + 1, page.size);
           final PdfGraphics graphics = newPage.graphics;
@@ -127,7 +127,8 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     }
   }
 
-  bool _isTextInFooterArea(PdfPage page) {
+  bool _isTextInFooterArea(PdfDocument document, int pageIndex) {
+    final PdfPage page = document.pages[pageIndex];
     const double cmToPoints = 28.35;
     const double bottomOffset = 30 + cmToPoints;
 
@@ -143,8 +144,8 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     
     final Rect footerBounds = Rect.fromLTWH(0, footerY, page.getClientSize().width, footerHeight);
 
-    final PdfTextExtractor extractor = PdfTextExtractor(page as PdfDocument);
-    final List<TextLine> textLines = extractor.extractTextLines();
+    final PdfTextExtractor extractor = PdfTextExtractor(document);
+    final List<TextLine> textLines = extractor.extractTextLines(startPageIndex: pageIndex, endPageIndex: pageIndex);
 
     for (final TextLine line in textLines) {
       for (final TextWord word in line.wordCollection) {
