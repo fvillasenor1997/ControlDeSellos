@@ -55,6 +55,7 @@ class ConfigService {
       rowHeights: {
         'header': 20.0, 'department': 20.0, 'stamp': 50.0, 'signature': 25.0, 'date': 25.0,
       },
+      copiedHeaderHeight: 30.0, // Valor por defecto para la nueva variable
     );
   }
 }
