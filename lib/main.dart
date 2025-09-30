@@ -44,6 +44,10 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
   final ConfigService _configService = ConfigService();
   late ConfigModel _config;
 
+  // Variable para activar/desactivar la depuración visual
+  bool _debugMode = true;
+
+
   @override
   void initState() {
     super.initState();
@@ -87,15 +91,17 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
 
       for (int i = document.pages.count - 1; i >= 0; i--) {
         final PdfPage page = document.pages[i];
+        
+        // Dibuja el cuadro de depuración si el modo está activado
+        if (_debugMode) {
+            _drawDebugBounds(page);
+        }
+
         if (_isTextInFooterArea(document, i)) {
-          // Si hay superposición, inserta una nueva página después de la actual
           final PdfPage newPage = document.pages.insert(i + 1, page.size);
-          final PdfGraphics graphics = newPage.graphics;
-          _drawFooter(graphics, newPage.getClientSize(), font, boldFont);
+          _drawFooter(newPage.graphics, newPage.getClientSize(), font, boldFont);
         } else {
-          // Si no hay superposición, dibuja el pie de página en la página actual
-          final PdfGraphics graphics = page.graphics;
-          _drawFooter(graphics, page.getClientSize(), font, boldFont);
+          _drawFooter(page.graphics, page.getClientSize(), font, boldFont);
         }
       }
 
@@ -104,7 +110,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
 
       final directory = await getApplicationDocumentsDirectory();
       final originalName = filePath.split(Platform.pathSeparator).last;
-      final newName = originalName.replaceAll('.pdf', '_SELLADO.pdf');
+      final newName = originalName.replaceAll('.pdf', '_SELLADO_DEBUG.pdf');
       final path = '${directory.path}/$newName';
       final file = File(path);
       await file.writeAsBytes(newPdfBytes);
@@ -126,9 +132,17 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       }
     }
   }
+  
+  // --- NUEVA FUNCIÓN DE DEPURACIÓN ---
+  void _drawDebugBounds(PdfPage page) {
+      final Rect footerBounds = _getFooterBounds(page);
+      page.graphics.drawRectangle(
+          pen: PdfPen(PdfColor(255, 0, 0), width: 1), // Lápiz rojo
+          bounds: footerBounds
+      );
+  }
 
-  bool _isTextInFooterArea(PdfDocument document, int pageIndex) {
-    final PdfPage page = document.pages[pageIndex];
+  Rect _getFooterBounds(PdfPage page) {
     const double cmToPoints = 28.35;
     const double bottomOffset = 30 + cmToPoints;
 
@@ -142,13 +156,20 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
         headerRowHeight + deptRowHeight + selloRowHeight + firmaRowHeight + dateRowHeight;
     final double footerY = page.getClientSize().height - footerHeight - bottomOffset;
     
-    final Rect footerBounds = Rect.fromLTWH(0, footerY, page.getClientSize().width, footerHeight);
+    return Rect.fromLTWH(0, footerY, page.getClientSize().width, footerHeight);
+  }
+
+
+  bool _isTextInFooterArea(PdfDocument document, int pageIndex) {
+    final Rect footerBounds = _getFooterBounds(document.pages[pageIndex]);
 
     final PdfTextExtractor extractor = PdfTextExtractor(document);
     final List<TextLine> textLines = extractor.extractTextLines(startPageIndex: pageIndex, endPageIndex: pageIndex);
 
     for (final TextLine line in textLines) {
       if (footerBounds.overlaps(line.bounds)) {
+        // Imprime en la consola si encuentra una superposición
+        debugPrint('Superposición detectada en la página ${pageIndex + 1} con el texto: "${line.text}"');
         return true;
       }
     }
@@ -333,6 +354,21 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       appBar: AppBar(
         title: const Text('Agregar Pie de Página a PDF'),
         actions: [
+          // Botón para activar/desactivar el modo de depuración
+          IconButton(
+            icon: Icon(
+              Icons.bug_report,
+              color: _debugMode ? Colors.red : Colors.grey,
+            ),
+            onPressed: () {
+              setState(() {
+                _debugMode = !_debugMode;
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Modo de depuración visual ${_debugMode ? "activado" : "desactivado"}')),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: _openConfigScreen,
