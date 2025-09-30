@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:flutter/material.dart';
+import 'package.flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
@@ -148,10 +148,8 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     final List<TextLine> textLines = extractor.extractTextLines(startPageIndex: pageIndex, endPageIndex: pageIndex);
 
     for (final TextLine line in textLines) {
-      for (final TextWord word in line.wordCollection) {
-        if (footerBounds.overlaps(word.bounds)) {
-          return true;
-        }
+      if (footerBounds.overlaps(line.bounds)) {
+        return true;
       }
     }
     
