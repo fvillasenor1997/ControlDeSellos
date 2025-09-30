@@ -90,12 +90,16 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
 
       for (int i = document.pages.count - 1; i >= 0; i--) {
         final page = document.pages[i];
-        // ✅ Usar Size de dart:ui en vez de pdf.SizeF
         final pageSize = Size(page.size.width, page.size.height);
 
         if (await _isAreaOccupied(filePath, i + 1, pageSize)) {
           final pdf.PdfPage newPage = document.pages.insert(i + 1, page.size);
           final newPageSize = Size(newPage.getClientSize().width, newPage.getClientSize().height);
+
+          // ✅ Copiar encabezado de la página original
+          await _copyHeaderToNewPage(filePath, i + 1, newPage, newPageSize);
+
+          // ✅ Dibujar tabla en la nueva hoja
           _drawFooter(newPage.graphics, newPageSize, font, boldFont);
         } else {
           _drawFooter(page.graphics, pageSize, font, boldFont);
@@ -129,7 +133,60 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       }
     }
   }
-  
+
+  /// ✅ Nuevo: Copiar encabezado desde la página original a la nueva
+  Future<void> _copyHeaderToNewPage(
+      String filePath, int pageNumber, pdf.PdfPage newPage, Size pageSize) async {
+    try {
+      final pdfDoc = await pdfx.PdfDocument.openFile(filePath);
+      final page = await pdfDoc.getPage(pageNumber);
+
+      final pageImage = await page.render(
+        width: page.width,
+        height: page.height,
+        format: pdfx.PdfPageImageFormat.png,
+      );
+
+      await page.close();
+      await pdfDoc.close();
+
+      if (pageImage == null) return;
+
+      final img.Image? image = img.decodeImage(pageImage.bytes);
+      if (image == null) return;
+
+      // 📌 Altura de encabezado desde configuración
+      final int headerHeight = _config.rowHeights['header']!.toInt();
+
+      // Recortamos la parte superior de la página (encabezado)
+      final img.Image headerCrop = img.copyCrop(
+        image,
+        0,
+        0,
+        image.width,
+        headerHeight,
+      );
+
+      // Convertimos a PNG
+      final headerBytes = img.encodePng(headerCrop);
+      final pdf.PdfBitmap headerBitmap = pdf.PdfBitmap(headerBytes);
+
+      // Dibujar encabezado en la nueva página
+      newPage.graphics.drawImage(
+        headerBitmap,
+        Rect.fromLTWH(
+          20,
+          20, // margen superior
+          pageSize.width - 40,
+          headerHeight.toDouble(),
+        ),
+      );
+    } catch (e, s) {
+      debugPrint("Error copiando encabezado en página $pageNumber: $e");
+      debugPrint(s.toString());
+    }
+  }
+
   Rect _getFooterBounds(Size pageSize) {
     const double cmToPoints = 28.35;
     const double bottomOffset = 30 + cmToPoints;
@@ -143,7 +200,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     final double footerHeight =
         headerRowHeight + deptRowHeight + selloRowHeight + firmaRowHeight + dateRowHeight;
     final double footerY = pageSize.height - footerHeight - bottomOffset;
-    
+
     return Rect.fromLTWH(0, footerY, pageSize.width, footerHeight);
   }
 
@@ -164,7 +221,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
 
       final img.Image? image = img.decodeImage(pageImage.bytes);
       if (image == null) return false;
-      
+
       final Rect footerBounds = _getFooterBounds(pageSize);
 
       int left = footerBounds.left.toInt();
@@ -178,8 +235,8 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       if (top + height > image.height) height = image.height - top;
 
       int nonWhitePixelCount = 0;
-      const int pixelThreshold = 50; 
-      const int sampleRate = 5; 
+      const int pixelThreshold = 50;
+      const int sampleRate = 5;
 
       for (int y = top; y < top + height; y += sampleRate) {
         for (int x = left; x < left + width; x += sampleRate) {
@@ -193,13 +250,12 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
           }
         }
       }
-
     } catch (e, s) {
-        debugPrint("Error durante el análisis de imagen de la página $pageNumber: $e");
-        debugPrint(s.toString());
-        return false;
+      debugPrint("Error durante el análisis de imagen de la página $pageNumber: $e");
+      debugPrint(s.toString());
+      return false;
     }
-    
+
     return false;
   }
 
@@ -298,8 +354,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
   void _drawCellText(pdf.PdfGraphics graphics, String text, pdf.PdfFont font,
       double cellX, double cellWidth, double cellY, double cellHeight,
       {pdf.PdfTextAlignment alignment = pdf.PdfTextAlignment.center,
-       pdf.PdfVerticalAlignment vAlignment = pdf.PdfVerticalAlignment.middle}) {
-
+      pdf.PdfVerticalAlignment vAlignment = pdf.PdfVerticalAlignment.middle}) {
     double hPadding = 2;
     double vPadding = 2;
 
@@ -307,17 +362,12 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
 
     Rect cellBounds = Rect.fromLTWH(cellX, cellY, cellWidth, cellHeight);
 
-    Rect paddedBounds = Rect.fromLTWH(
-        cellBounds.left + hPadding,
-        cellBounds.top + vPadding,
-        cellBounds.width - (hPadding * 2),
-        cellBounds.height - (vPadding * 2));
+    Rect paddedBounds = Rect.fromLTWH(cellBounds.left + hPadding, cellBounds.top + vPadding,
+        cellBounds.width - (hPadding * 2), cellBounds.height - (vPadding * 2));
 
     graphics.drawString(processedText, font,
         bounds: paddedBounds,
-        format: pdf.PdfStringFormat(
-            alignment: alignment,
-            lineAlignment: vAlignment));
+        format: pdf.PdfStringFormat(alignment: alignment, lineAlignment: vAlignment));
   }
 
   void _openConfigScreen() async {
@@ -339,7 +389,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
           TextButton(
             onPressed: () async {
               final isCorrect = await _configService.checkPassword(passwordController.text);
-              if(mounted) Navigator.of(context).pop(isCorrect);
+              if (mounted) Navigator.of(context).pop(isCorrect);
             },
             child: const Text('Aceptar'),
           ),
@@ -359,14 +409,14 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
           _config = result;
         });
         await _configService.saveConfig(_config);
-        if(mounted) {
+        if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Configuración guardada')),
           );
         }
       }
     } else if (isPasswordCorrect != null) {
-      if(mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Contraseña incorrecta')),
         );
@@ -397,10 +447,10 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
         child: Container(
           color: _isDragOver ? Colors.indigo.withOpacity(0.1) : Colors.transparent,
           child: _isLoading
-              ? Center(
+              ? const Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
+                    children: [
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 40.0),
                         child: LinearProgressIndicator(),
@@ -410,15 +460,15 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
                     ],
                   ),
                 )
-              : Center(
+              : const Center(
                   child: Padding(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: EdgeInsets.all(16.0),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                         Icon(Icons.cloud_upload_outlined, size: 80, color: Colors.grey),
-                         SizedBox(height: 16),
-                         Text(
+                      children: [
+                        Icon(Icons.cloud_upload_outlined, size: 80, color: Colors.grey),
+                        SizedBox(height: 16),
+                        Text(
                           'Arrastra y suelta un archivo PDF aquí o presiona el botón para seleccionarlo.',
                           textAlign: TextAlign.center,
                           style: TextStyle(fontSize: 16),
