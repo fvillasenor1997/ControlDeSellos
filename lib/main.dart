@@ -161,10 +161,10 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       // Recortamos la parte superior de la página (encabezado)
       final img.Image headerCrop = img.copyCrop(
         image,
-        0,
-        0,
-        image.width,
-        headerHeight,
+        x: 0,
+        y: 0,
+        width: image.width,
+        height: headerHeight,
       );
 
       // Convertimos a PNG
