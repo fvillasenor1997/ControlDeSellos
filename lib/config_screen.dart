@@ -15,6 +15,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
   final _nameController = TextEditingController();
   final _widthController = TextEditingController();
   late final Map<String, TextEditingController> _heightControllers;
+  late final TextEditingController _copiedHeaderHeightController;
   late List<Map<String, TextEditingController>> _departmentControllers;
 
   @override
@@ -28,6 +29,8 @@ class _ConfigScreenState extends State<ConfigScreen> {
       'signature': TextEditingController(text: _config.rowHeights['signature'].toString()),
       'date': TextEditingController(text: _config.rowHeights['date'].toString()),
     };
+    _copiedHeaderHeightController =
+        TextEditingController(text: _config.copiedHeaderHeight.toString());
 
     _departmentControllers = _config.departments.map((dept) {
       return {
@@ -46,6 +49,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
     _nameController.dispose();
     _widthController.dispose();
     _heightControllers.values.forEach((controller) => controller.dispose());
+    _copiedHeaderHeightController.dispose();
     for (var controllerMap in _departmentControllers) {
       controllerMap.values.forEach((controller) => controller.dispose());
     }
@@ -96,6 +100,9 @@ class _ConfigScreenState extends State<ConfigScreen> {
       'signature': double.tryParse(_heightControllers['signature']!.text) ?? 25.0,
       'date': double.tryParse(_heightControllers['date']!.text) ?? 25.0,
     };
+
+    _config.copiedHeaderHeight =
+        double.tryParse(_copiedHeaderHeightController.text) ?? 30.0;
 
     for (int i = 0; i < _config.departments.length; i++) {
       _config.departments[i]['stamp_text'] = _departmentControllers[i]['stamp_text']!.text;
@@ -193,10 +200,20 @@ class _ConfigScreenState extends State<ConfigScreen> {
                 },
               ),
               const Divider(),
-              const Text('Altura de las Filas', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text('Altura del Encabezado Copiado',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              TextField(
+                controller: _copiedHeaderHeightController,
+                decoration:
+                    const InputDecoration(labelText: 'Altura del encabezado a copiar'),
+                keyboardType: TextInputType.number,
+              ),
+              const Divider(),
+              const Text('Altura de las Filas de la Tabla',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               TextField(
                 controller: _heightControllers['header'],
-                decoration: const InputDecoration(labelText: 'Altura de la cabecera'),
+                decoration: const InputDecoration(labelText: 'Altura de la cabecera de la tabla'),
                 keyboardType: TextInputType.number,
               ),
               TextField(
