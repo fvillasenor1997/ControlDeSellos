@@ -1,10 +1,9 @@
 import 'dart:io';
-import 'dart:ui' show Rect; // Especificar Rect para evitar conflictos
+import 'dart:ui'; // Para usar Size, Rect, Offset
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
-// --- CAMBIO IMPORTANTE: Import con prefijo 'pdf' ---
 import 'package:syncfusion_flutter_pdf/pdf.dart' as pdf;
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:pdfx/pdfx.dart' as pdfx;
@@ -91,11 +90,15 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
 
       for (int i = document.pages.count - 1; i >= 0; i--) {
         final page = document.pages[i];
-        if (await _isAreaOccupied(filePath, i + 1, page.size)) {
+        // ✅ Usar Size de dart:ui en vez de pdf.SizeF
+        final pageSize = Size(page.size.width, page.size.height);
+
+        if (await _isAreaOccupied(filePath, i + 1, pageSize)) {
           final pdf.PdfPage newPage = document.pages.insert(i + 1, page.size);
-          _drawFooter(newPage.graphics, newPage.getClientSize(), font, boldFont);
+          final newPageSize = Size(newPage.getClientSize().width, newPage.getClientSize().height);
+          _drawFooter(newPage.graphics, newPageSize, font, boldFont);
         } else {
-          _drawFooter(page.graphics, page.getClientSize(), font, boldFont);
+          _drawFooter(page.graphics, pageSize, font, boldFont);
         }
       }
 
@@ -127,7 +130,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     }
   }
   
-  Rect _getFooterBounds(pdf.SizeF pageSize) {
+  Rect _getFooterBounds(Size pageSize) {
     const double cmToPoints = 28.35;
     const double bottomOffset = 30 + cmToPoints;
 
@@ -144,7 +147,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     return Rect.fromLTWH(0, footerY, pageSize.width, footerHeight);
   }
 
-  Future<bool> _isAreaOccupied(String filePath, int pageNumber, pdf.SizeF pageSize) async {
+  Future<bool> _isAreaOccupied(String filePath, int pageNumber, Size pageSize) async {
     try {
       final pdfDoc = await pdfx.PdfDocument.openFile(filePath);
       final page = await pdfDoc.getPage(pageNumber);
@@ -200,7 +203,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     return false;
   }
 
-  void _drawFooter(pdf.PdfGraphics graphics, pdf.SizeF pageSize, pdf.PdfFont font,
+  void _drawFooter(pdf.PdfGraphics graphics, Size pageSize, pdf.PdfFont font,
       pdf.PdfFont boldFont) {
     const double cmToPoints = 28.35;
     const double bottomOffset = 30 + cmToPoints;
