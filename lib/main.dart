@@ -174,9 +174,9 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       newPage.graphics.drawImage(
         headerBitmap,
         Rect.fromLTWH(
-          20,
+          0,
           20, // margen superior
-          pageSize.width - 40,
+          pageSize.width,
           headerHeight.toDouble(),
         ),
       );
