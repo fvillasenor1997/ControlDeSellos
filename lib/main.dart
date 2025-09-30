@@ -85,23 +85,15 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       final PdfFont boldFont =
           PdfStandardFont(PdfFontFamily.helvetica, 10, style: PdfFontStyle.bold);
 
-      bool overlapDetected = false;
-      for (int i = 0; i < document.pages.count; i++) {
-        if (_isTextInFooterArea(document.pages[i])) {
-          overlapDetected = true;
-          break;
-        }
-      }
-
-      if (overlapDetected) {
-        // Si hay superposición, añade una nueva página para el pie de página
-        final PdfPage newPage = document.pages.add();
-        final PdfGraphics graphics = newPage.graphics;
-        _drawFooter(graphics, newPage.getClientSize(), font, boldFont);
-      } else {
-        // Si no hay superposición, dibuja el pie de página en cada página
-        for (int i = 0; i < document.pages.count; i++) {
-          final PdfPage page = document.pages[i];
+      for (int i = document.pages.count - 1; i >= 0; i--) {
+        final PdfPage page = document.pages[i];
+        if (_isTextInFooterArea(page)) {
+          // Si hay superposición, inserta una nueva página después de la actual
+          final PdfPage newPage = document.pages.insert(i + 1, page.size);
+          final PdfGraphics graphics = newPage.graphics;
+          _drawFooter(graphics, newPage.getClientSize(), font, boldFont);
+        } else {
+          // Si no hay superposición, dibuja el pie de página en la página actual
           final PdfGraphics graphics = page.graphics;
           _drawFooter(graphics, page.getClientSize(), font, boldFont);
         }
