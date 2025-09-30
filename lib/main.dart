@@ -1,15 +1,18 @@
 import 'dart:io';
+import 'dart:ui' show Rect; // Especificar Rect para evitar conflictos
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:desktop_drop/desktop_drop.dart';
+import 'package:pdfx/pdfx.dart' as pdfx; // Para renderizar PDF a imagen
+import 'package:image/image.dart' as img; // Para procesar la imagen
+
 import 'config_model.dart';
 import 'config_screen.dart';
 import 'config_service.dart';
 import 'package:cross_file/cross_file.dart';
-
 
 void main() {
   runApp(const MyApp());
@@ -43,10 +46,6 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
   bool _isDragOver = false;
   final ConfigService _configService = ConfigService();
   late ConfigModel _config;
-
-  // Variable para activar/desactivar la depuración visual
-  bool _debugMode = true;
-
 
   @override
   void initState() {
@@ -90,14 +89,8 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
           PdfStandardFont(PdfFontFamily.helvetica, 10, style: PdfFontStyle.bold);
 
       for (int i = document.pages.count - 1; i >= 0; i--) {
-        final PdfPage page = document.pages[i];
-        
-        // Dibuja el cuadro de depuración si el modo está activado
-        if (_debugMode) {
-            _drawDebugBounds(page);
-        }
-
-        if (_isTextInFooterArea(document, i)) {
+        final page = document.pages[i];
+        if (await _isAreaOccupied(filePath, i + 1, page.size)) {
           final PdfPage newPage = document.pages.insert(i + 1, page.size);
           _drawFooter(newPage.graphics, newPage.getClientSize(), font, boldFont);
         } else {
@@ -110,7 +103,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
 
       final directory = await getApplicationDocumentsDirectory();
       final originalName = filePath.split(Platform.pathSeparator).last;
-      final newName = originalName.replaceAll('.pdf', '_SELLADO_DEBUG.pdf');
+      final newName = originalName.replaceAll('.pdf', '_SELLADO.pdf');
       final path = '${directory.path}/$newName';
       final file = File(path);
       await file.writeAsBytes(newPdfBytes);
@@ -133,16 +126,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     }
   }
   
-  // --- NUEVA FUNCIÓN DE DEPURACIÓN ---
-  void _drawDebugBounds(PdfPage page) {
-      final Rect footerBounds = _getFooterBounds(page);
-      page.graphics.drawRectangle(
-          pen: PdfPen(PdfColor(255, 0, 0), width: 1), // Lápiz rojo
-          bounds: footerBounds
-      );
-  }
-
-  Rect _getFooterBounds(PdfPage page) {
+  Rect _getFooterBounds(SizeF pageSize) {
     const double cmToPoints = 28.35;
     const double bottomOffset = 30 + cmToPoints;
 
@@ -154,30 +138,68 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
 
     final double footerHeight =
         headerRowHeight + deptRowHeight + selloRowHeight + firmaRowHeight + dateRowHeight;
-    final double footerY = page.getClientSize().height - footerHeight - bottomOffset;
+    final double footerY = pageSize.height - footerHeight - bottomOffset;
     
-    return Rect.fromLTWH(0, footerY, page.getClientSize().width, footerHeight);
+    return Rect.fromLTWH(0, footerY, pageSize.width, footerHeight);
   }
 
+  Future<bool> _isAreaOccupied(String filePath, int pageNumber, SizeF pageSize) async {
+    try {
+      final pdfDoc = await pdfx.PdfDocument.openFile(filePath);
+      final page = await pdfDoc.getPage(pageNumber);
 
-  bool _isTextInFooterArea(PdfDocument document, int pageIndex) {
-    final Rect footerBounds = _getFooterBounds(document.pages[pageIndex]);
+      final pageImage = await page.render(
+        width: page.width,
+        height: page.height,
+        format: pdfx.PdfPageImageFormat.png,
+      );
+      await page.close();
+      await pdfDoc.close();
 
-    final PdfTextExtractor extractor = PdfTextExtractor(document);
-    final List<TextLine> textLines = extractor.extractTextLines(startPageIndex: pageIndex, endPageIndex: pageIndex);
+      if (pageImage == null) return false;
 
-    for (final TextLine line in textLines) {
-      if (footerBounds.overlaps(line.bounds)) {
-        // Imprime en la consola si encuentra una superposición
-        debugPrint('Superposición detectada en la página ${pageIndex + 1} con el texto: "${line.text}"');
-        return true;
+      final img.Image? image = img.decodeImage(pageImage.bytes);
+      if (image == null) return false;
+      
+      final Rect footerBounds = _getFooterBounds(pageSize);
+
+      int left = footerBounds.left.toInt();
+      int top = footerBounds.top.toInt();
+      int width = footerBounds.width.toInt();
+      int height = footerBounds.height.toInt();
+
+      if (left < 0) left = 0;
+      if (top < 0) top = 0;
+      if (left + width > image.width) width = image.width - left;
+      if (top + height > image.height) height = image.height - top;
+
+      int nonWhitePixelCount = 0;
+      const int pixelThreshold = 50; 
+      const int sampleRate = 5; 
+
+      for (int y = top; y < top + height; y += sampleRate) {
+        for (int x = left; x < left + width; x += sampleRate) {
+          final pixel = image.getPixel(x, y);
+          if ((pixel.r < 250 || pixel.g < 250 || pixel.b < 250) && pixel.a > 10) {
+            nonWhitePixelCount++;
+            if (nonWhitePixelCount > pixelThreshold) {
+              debugPrint("Superposición detectada en página $pageNumber por análisis de píxeles.");
+              return true;
+            }
+          }
+        }
       }
+
+    } catch (e, s) {
+        debugPrint("Error durante el análisis de imagen de la página $pageNumber: $e");
+        debugPrint(s.toString());
+        return false;
     }
     
     return false;
   }
 
-  void _drawFooter(PdfGraphics graphics, Size pageSize, PdfFont font,
+  void _drawFooter(PdfGraphics graphics, SizeF pageSize, PdfFont font,
       PdfFont boldFont) {
     const double cmToPoints = 28.35;
     const double bottomOffset = 30 + cmToPoints;
@@ -332,7 +354,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
         setState(() {
           _config = result;
         });
-        await _configService.saveConfig(_config); // Guarda la configuración
+        await _configService.saveConfig(_config);
         if(mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Configuración guardada')),
@@ -354,21 +376,6 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       appBar: AppBar(
         title: const Text('Agregar Pie de Página a PDF'),
         actions: [
-          // Botón para activar/desactivar el modo de depuración
-          IconButton(
-            icon: Icon(
-              Icons.bug_report,
-              color: _debugMode ? Colors.red : Colors.grey,
-            ),
-            onPressed: () {
-              setState(() {
-                _debugMode = !_debugMode;
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Modo de depuración visual ${_debugMode ? "activado" : "desactivado"}')),
-              );
-            },
-          ),
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: _openConfigScreen,
