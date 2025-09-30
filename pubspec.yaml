@@ -14,6 +14,8 @@ dependencies:
   syncfusion_flutter_pdf: ^26.1.35
   syncfusion_flutter_core: ^26.1.35
   shared_preferences: ^2.0.15
+  pdfx: ^2.5.0          # <--- AÑADIR ESTA LÍNEA
+  image: ^4.0.17        # <--- AÑADIR ESTA LÍNEA
 
   # Selección de archivos
   file_picker: 
