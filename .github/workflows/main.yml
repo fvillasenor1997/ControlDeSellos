@@ -32,19 +32,15 @@ jobs:
         with:
           channel: 'stable' # Puedes cambiar a 'beta' o 'dev' si lo necesitas
 
-      # 4. Habilita el soporte para Windows
-      - name: Enable Windows support
-        run: flutter config --enable-windows-desktop
-
-      # 5. Instala las dependencias del proyecto
+      # 4. Instala las dependencias del proyecto
       - name: Install dependencies
         run: flutter pub get
 
-      # 6. Compila el ejecutable de Windows en modo release
+      # 5. Compila el ejecutable de Windows en modo release
       - name: Build Windows EXE
         run: flutter build windows --release
 
-      # 7. Empaqueta los artefactos de la compilación
+      # 6. Empaqueta los artefactos de la compilación
       # Esto toma la carpeta de salida y la sube como artefacto descargable
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
@@ -53,3 +49,4 @@ jobs:
           name: controldesellos-windows-build
           # Ruta a la carpeta que contiene el .exe y sus archivos necesarios
           path: build/windows/x64/runner/Release/
+          
