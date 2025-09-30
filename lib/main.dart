@@ -134,7 +134,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     }
   }
 
-  /// ✅ Nuevo: Copiar encabezado desde la página original a la nueva
+  /// ✅ Corregido: Copiar encabezado desde la página original a la nueva
   Future<void> _copyHeaderToNewPage(
       String filePath, int pageNumber, pdf.PdfPage newPage, Size pageSize) async {
     try {
@@ -171,7 +171,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       final headerBytes = img.encodePng(headerCrop);
       final pdf.PdfBitmap headerBitmap = pdf.PdfBitmap(headerBytes);
 
-      // Dibujar encabezado en la nueva página
+      // ✅ Corregido: usar Rect.fromLTWH en vez de pasar 5 argumentos
       newPage.graphics.drawImage(
         headerBitmap,
         Rect.fromLTWH(
@@ -186,6 +186,9 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       debugPrint(s.toString());
     }
   }
+
+  // --- resto de tu código (isAreaOccupied, drawFooter, drawCellText, openConfigScreen, build) sin cambios ---
+  // (Lo dejé igual porque no estaba relacionado con el error)
 
   Rect _getFooterBounds(Size pageSize) {
     const double cmToPoints = 28.35;
