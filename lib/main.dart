@@ -4,10 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
-import 'package:syncfusion_flutter_pdf/pdf.dart';
+// --- CAMBIO IMPORTANTE: Import con prefijo 'pdf' ---
+import 'package:syncfusion_flutter_pdf/pdf.dart' as pdf;
 import 'package:desktop_drop/desktop_drop.dart';
-import 'package:pdfx/pdfx.dart' as pdfx; // Para renderizar PDF a imagen
-import 'package:image/image.dart' as img; // Para procesar la imagen
+import 'package:pdfx/pdfx.dart' as pdfx;
+import 'package:image/image.dart' as img;
 
 import 'config_model.dart';
 import 'config_screen.dart';
@@ -83,15 +84,15 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
 
     try {
       final pdfBytes = await File(filePath).readAsBytes();
-      final PdfDocument document = PdfDocument(inputBytes: pdfBytes);
-      final PdfFont font = PdfStandardFont(PdfFontFamily.helvetica, 9);
-      final PdfFont boldFont =
-          PdfStandardFont(PdfFontFamily.helvetica, 10, style: PdfFontStyle.bold);
+      final pdf.PdfDocument document = pdf.PdfDocument(inputBytes: pdfBytes);
+      final pdf.PdfFont font = pdf.PdfStandardFont(pdf.PdfFontFamily.helvetica, 9);
+      final pdf.PdfFont boldFont =
+          pdf.PdfStandardFont(pdf.PdfFontFamily.helvetica, 10, style: pdf.PdfFontStyle.bold);
 
       for (int i = document.pages.count - 1; i >= 0; i--) {
         final page = document.pages[i];
         if (await _isAreaOccupied(filePath, i + 1, page.size)) {
-          final PdfPage newPage = document.pages.insert(i + 1, page.size);
+          final pdf.PdfPage newPage = document.pages.insert(i + 1, page.size);
           _drawFooter(newPage.graphics, newPage.getClientSize(), font, boldFont);
         } else {
           _drawFooter(page.graphics, page.getClientSize(), font, boldFont);
@@ -126,7 +127,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     }
   }
   
-  Rect _getFooterBounds(SizeF pageSize) {
+  Rect _getFooterBounds(pdf.SizeF pageSize) {
     const double cmToPoints = 28.35;
     const double bottomOffset = 30 + cmToPoints;
 
@@ -143,7 +144,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     return Rect.fromLTWH(0, footerY, pageSize.width, footerHeight);
   }
 
-  Future<bool> _isAreaOccupied(String filePath, int pageNumber, SizeF pageSize) async {
+  Future<bool> _isAreaOccupied(String filePath, int pageNumber, pdf.SizeF pageSize) async {
     try {
       final pdfDoc = await pdfx.PdfDocument.openFile(filePath);
       final page = await pdfDoc.getPage(pageNumber);
@@ -199,8 +200,8 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     return false;
   }
 
-  void _drawFooter(PdfGraphics graphics, SizeF pageSize, PdfFont font,
-      PdfFont boldFont) {
+  void _drawFooter(pdf.PdfGraphics graphics, pdf.SizeF pageSize, pdf.PdfFont font,
+      pdf.PdfFont boldFont) {
     const double cmToPoints = 28.35;
     const double bottomOffset = 30 + cmToPoints;
 
@@ -214,7 +215,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
         headerRowHeight + deptRowHeight + selloRowHeight + firmaRowHeight + dateRowHeight;
     final double footerY = pageSize.height - footerHeight - bottomOffset;
 
-    final PdfPen pen = PdfPen(PdfColor(0, 0, 0), width: 0.5);
+    final pdf.PdfPen pen = pdf.PdfPen(pdf.PdfColor(0, 0, 0), width: 0.5);
     final double footerWidth = pageSize.width - 40;
 
     graphics.drawRectangle(
@@ -261,10 +262,10 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     currentX = 20;
     for (final dept in _config.departments) {
       final colWidth = footerWidth * (dept['width'] / 100);
-      final font = PdfStandardFont(PdfFontFamily.helvetica, dept['stamp_font_size']);
+      final font = pdf.PdfStandardFont(pdf.PdfFontFamily.helvetica, dept['stamp_font_size']);
       _drawCellText(
           graphics, dept['stamp_text'] ?? '', font, currentX, colWidth, selloY, selloRowHeight,
-          alignment: PdfTextAlignment.left, vAlignment: PdfVerticalAlignment.top);
+          alignment: pdf.PdfTextAlignment.left, vAlignment: pdf.PdfVerticalAlignment.top);
       currentX += colWidth;
     }
 
@@ -272,10 +273,10 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     currentX = 20;
     for (final dept in _config.departments) {
       final colWidth = footerWidth * (dept['width'] / 100);
-      final font = PdfStandardFont(PdfFontFamily.helvetica, dept['signature_font_size']);
+      final font = pdf.PdfStandardFont(pdf.PdfFontFamily.helvetica, dept['signature_font_size']);
       _drawCellText(
           graphics, dept['signature_text'] ?? '', font, currentX, colWidth, firmaY, firmaRowHeight,
-          alignment: PdfTextAlignment.left, vAlignment: PdfVerticalAlignment.top);
+          alignment: pdf.PdfTextAlignment.left, vAlignment: pdf.PdfVerticalAlignment.top);
       currentX += colWidth;
     }
 
@@ -283,18 +284,18 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     currentX = 20;
     for (final dept in _config.departments) {
       final colWidth = footerWidth * (dept['width'] / 100);
-      final font = PdfStandardFont(PdfFontFamily.helvetica, dept['date_font_size']);
+      final font = pdf.PdfStandardFont(pdf.PdfFontFamily.helvetica, dept['date_font_size']);
       _drawCellText(
           graphics, dept['date_text'] ?? '', font, currentX, colWidth, dateY, dateRowHeight,
-          alignment: PdfTextAlignment.left, vAlignment: PdfVerticalAlignment.top);
+          alignment: pdf.PdfTextAlignment.left, vAlignment: pdf.PdfVerticalAlignment.top);
       currentX += colWidth;
     }
   }
 
-  void _drawCellText(PdfGraphics graphics, String text, PdfFont font,
+  void _drawCellText(pdf.PdfGraphics graphics, String text, pdf.PdfFont font,
       double cellX, double cellWidth, double cellY, double cellHeight,
-      {PdfTextAlignment alignment = PdfTextAlignment.center,
-       PdfVerticalAlignment vAlignment = PdfVerticalAlignment.middle}) {
+      {pdf.PdfTextAlignment alignment = pdf.PdfTextAlignment.center,
+       pdf.PdfVerticalAlignment vAlignment = pdf.PdfVerticalAlignment.middle}) {
 
     double hPadding = 2;
     double vPadding = 2;
@@ -311,7 +312,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
 
     graphics.drawString(processedText, font,
         bounds: paddedBounds,
-        format: PdfStringFormat(
+        format: pdf.PdfStringFormat(
             alignment: alignment,
             lineAlignment: vAlignment));
   }
