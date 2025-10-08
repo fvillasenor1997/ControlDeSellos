@@ -217,12 +217,23 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       final List<int> newPdfBytes = await document.save();
       document.dispose();
 
+      // Crear carpeta "Jobs" dentro de Documentos
       final directory = await getApplicationDocumentsDirectory();
+      final jobsFolder = Directory('${directory.path}/Jobs');
+      
+      // Crear la carpeta si no existe
+      if (!await jobsFolder.exists()) {
+        await jobsFolder.create(recursive: true);
+        debugPrint("Carpeta Jobs creada en: ${jobsFolder.path}");
+      }
+
       final originalName = filePath.split(Platform.pathSeparator).last;
       final newName = originalName.replaceAll('.pdf', '_SELLADO.pdf');
-      final path = '${directory.path}/$newName';
+      final path = '${jobsFolder.path}/$newName';
       final file = File(path);
       await file.writeAsBytes(newPdfBytes);
+      
+      debugPrint("PDF guardado en: $path");
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
