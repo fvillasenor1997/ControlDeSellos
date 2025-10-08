@@ -176,11 +176,9 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
         List<int> lastPagesDescending = jobs.values.map((job) => job.lastPage).toList();
         lastPagesDescending.sort((a, b) => b.compareTo(a));
 
-        int pageOffset = 0;
-
         // Procesar cada última página en orden descendente
         for (final pageNum in lastPagesDescending) {
-          final pageIndex = pageNum - 1 + pageOffset;
+          final pageIndex = pageNum - 1;
           
           if (pageIndex >= document.pages.count) continue;
 
@@ -206,7 +204,6 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
             await _copyHeaderToNewPage(filePath, pageNum, newPage, newPageSize);
             _drawFooter(newPage.graphics, newPageSize, font, boldFont);
 
-            pageOffset++;
           } else {
             debugPrint("Área libre, agregando tabla en la misma página para Job $jobNumber");
             _drawFooter(page.graphics, pageSize, font, boldFont);
