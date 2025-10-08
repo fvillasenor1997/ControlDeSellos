@@ -41,12 +41,13 @@ class PdfProcessingScreen extends StatefulWidget {
   _PdfProcessingScreenState createState() => _PdfProcessingScreenState();
 }
 
-class JobRange {
+class JobInfo {
   final String jobNumber;
-  final int startPage;
-  int endPage;
+  final List<int> pages;
 
-  JobRange(this.jobNumber, this.startPage, this.endPage);
+  JobInfo(this.jobNumber, this.pages);
+
+  int get lastPage => pages.isNotEmpty ? pages.last : 0;
 }
 
 class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
@@ -88,7 +89,6 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
         return null;
       }
 
-      final pdf.PdfPage page = document.pages[pageNumber - 1];
       final pdf.PdfTextExtractor extractor = pdf.PdfTextExtractor(document);
       final String text = extractor.extractText(startPageIndex: pageNumber - 1, endPageIndex: pageNumber - 1);
       
@@ -100,9 +100,9 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     }
   }
 
-  /// Busca patrones de Job en el PDF y retorna los rangos de páginas por job
-  Future<List<JobRange>> _findJobRanges(String filePath, int totalPages) async {
-    List<JobRange> jobRanges = [];
+  /// Encuentra todos los jobs únicos y sus páginas
+  Future<Map<String, JobInfo>> _findUniqueJobs(String filePath, int totalPages) async {
+    Map<String, JobInfo> jobs = {};
     final RegExp jobPattern = RegExp(r'Job:\s*([A-Z0-9]+-[0-9]+)', caseSensitive: false);
 
     for (int i = 1; i <= totalPages; i++) {
@@ -110,31 +110,29 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       if (text != null && text.isNotEmpty) {
         final match = jobPattern.firstMatch(text);
         if (match != null) {
-          final jobNumber = match.group(1)!;
-          debugPrint("Job encontrado en página $i: $jobNumber");
-
-          // Si hay un job anterior, actualizar su página final
-          if (jobRanges.isNotEmpty) {
-            jobRanges.last.endPage = i - 1;
+          final jobNumber = match.group(1)!.toUpperCase();
+          
+          if (jobs.containsKey(jobNumber)) {
+            // Job ya existe, agregar página
+            jobs[jobNumber]!.pages.add(i);
+            debugPrint("Job $jobNumber encontrado en página $i (ya existía)");
+          } else {
+            // Nuevo job
+            jobs[jobNumber] = JobInfo(jobNumber, [i]);
+            debugPrint("Nuevo Job $jobNumber encontrado en página $i");
           }
-
-          // Crear nuevo rango de job
-          jobRanges.add(JobRange(jobNumber, i, totalPages));
         }
       }
     }
 
-    if (jobRanges.isEmpty) {
-      debugPrint("No se encontraron jobs. Se procesará como un solo documento.");
-      jobRanges.add(JobRange("DOCUMENTO_COMPLETO", 1, totalPages));
-    }
-
     // Mostrar resumen de jobs encontrados
-    for (var job in jobRanges) {
-      debugPrint("Job: ${job.jobNumber} - Páginas: ${job.startPage} a ${job.endPage}");
-    }
+    debugPrint("\n=== RESUMEN DE JOBS ===");
+    jobs.forEach((jobNum, jobInfo) {
+      debugPrint("Job: $jobNum - Páginas: ${jobInfo.pages} - Última página: ${jobInfo.lastPage}");
+    });
+    debugPrint("Total de jobs únicos: ${jobs.length}\n");
 
-    return jobRanges;
+    return jobs;
   }
 
   Future<void> _processFile(String filePath) async {
@@ -156,38 +154,63 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       final pdf.PdfFont boldFont =
           pdf.PdfStandardFont(pdf.PdfFontFamily.helvetica, 10, style: pdf.PdfFontStyle.bold);
 
-      // Encontrar rangos de jobs
-      final jobRanges = await _findJobRanges(filePath, document.pages.count);
+      // Encontrar todos los jobs únicos
+      final jobs = await _findUniqueJobs(filePath, document.pages.count);
 
-      // Procesar en orden inverso para mantener índices correctos al insertar páginas
-      int pageOffset = 0; // Para ajustar índices después de inserciones
-
-      for (int jobIndex = jobRanges.length - 1; jobIndex >= 0; jobIndex--) {
-        final job = jobRanges[jobIndex];
-        final lastPageIndex = job.endPage - 1 + pageOffset; // Ajustar por inserciones previas
-
-        if (lastPageIndex >= document.pages.count) continue;
-
+      if (jobs.isEmpty) {
+        debugPrint("No se encontraron jobs. Procesando la última página del documento.");
+        final lastPageIndex = document.pages.count - 1;
         final page = document.pages[lastPageIndex];
         final pageSize = Size(page.size.width, page.size.height);
-
-        debugPrint("Procesando última página del Job ${job.jobNumber}: página ${lastPageIndex + 1}");
-
-        if (await _isAreaOccupied(filePath, job.endPage, pageSize)) {
-          debugPrint("Área ocupada, insertando nueva página para Job ${job.jobNumber}");
-          final pdf.PdfPage newPage = document.pages.insert(lastPageIndex + 1, page.size);
+        
+        if (await _isAreaOccupied(filePath, lastPageIndex + 1, pageSize)) {
+          final pdf.PdfPage newPage = document.pages.add();
           final newPageSize = Size(newPage.getClientSize().width, newPage.getClientSize().height);
-
-          // Copiar encabezado de la página original
-          await _copyHeaderToNewPage(filePath, job.endPage, newPage, newPageSize);
-
-          // Dibujar tabla en la nueva hoja
+          await _copyHeaderToNewPage(filePath, lastPageIndex + 1, newPage, newPageSize);
           _drawFooter(newPage.graphics, newPageSize, font, boldFont);
-
-          pageOffset++; // Incrementar offset por la página insertada
         } else {
-          debugPrint("Área libre, agregando tabla en la misma página para Job ${job.jobNumber}");
           _drawFooter(page.graphics, pageSize, font, boldFont);
+        }
+      } else {
+        // Obtener las últimas páginas de cada job y ordenarlas de mayor a menor
+        List<int> lastPagesDescending = jobs.values.map((job) => job.lastPage).toList();
+        lastPagesDescending.sort((a, b) => b.compareTo(a));
+
+        int pageOffset = 0;
+
+        // Procesar cada última página en orden descendente
+        for (final pageNum in lastPagesDescending) {
+          final pageIndex = pageNum - 1 + pageOffset;
+          
+          if (pageIndex >= document.pages.count) continue;
+
+          final page = document.pages[pageIndex];
+          final pageSize = Size(page.size.width, page.size.height);
+
+          // Buscar a qué job pertenece esta página
+          String jobNumber = "";
+          for (var entry in jobs.entries) {
+            if (entry.value.lastPage == pageNum) {
+              jobNumber = entry.key;
+              break;
+            }
+          }
+
+          debugPrint("Procesando última página del Job $jobNumber: página ${pageIndex + 1}");
+
+          if (await _isAreaOccupied(filePath, pageNum, pageSize)) {
+            debugPrint("Área ocupada, insertando nueva página para Job $jobNumber");
+            final pdf.PdfPage newPage = document.pages.insert(pageIndex + 1, page.size);
+            final newPageSize = Size(newPage.getClientSize().width, newPage.getClientSize().height);
+
+            await _copyHeaderToNewPage(filePath, pageNum, newPage, newPageSize);
+            _drawFooter(newPage.graphics, newPageSize, font, boldFont);
+
+            pageOffset++;
+          } else {
+            debugPrint("Área libre, agregando tabla en la misma página para Job $jobNumber");
+            _drawFooter(page.graphics, pageSize, font, boldFont);
+          }
         }
       }
 
@@ -203,7 +226,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('PDF procesado: ${jobRanges.length} job(s) encontrado(s)')),
+          SnackBar(content: Text('PDF procesado: ${jobs.length} job(s) único(s) encontrado(s)')),
         );
         OpenFile.open(path);
       }
