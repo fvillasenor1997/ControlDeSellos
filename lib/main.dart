@@ -41,6 +41,14 @@ class PdfProcessingScreen extends StatefulWidget {
   _PdfProcessingScreenState createState() => _PdfProcessingScreenState();
 }
 
+class JobRange {
+  final String jobNumber;
+  final int startPage;
+  int endPage;
+
+  JobRange(this.jobNumber, this.startPage, this.endPage);
+}
+
 class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
   bool _isLoading = false;
   bool _isDragOver = false;
@@ -69,6 +77,58 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     }
   }
 
+  /// Extrae el texto de una página usando pdfx
+  Future<String?> _extractTextFromPage(String filePath, int pageNumber) async {
+    try {
+      final pdfDoc = await pdfx.PdfDocument.openFile(filePath);
+      final page = await pdfDoc.getPage(pageNumber);
+      final textContent = await page.getText();
+      await page.close();
+      await pdfDoc.close();
+      return textContent;
+    } catch (e) {
+      debugPrint("Error extrayendo texto de página $pageNumber: $e");
+      return null;
+    }
+  }
+
+  /// Busca patrones de Job en el PDF y retorna los rangos de páginas por job
+  Future<List<JobRange>> _findJobRanges(String filePath, int totalPages) async {
+    List<JobRange> jobRanges = [];
+    final RegExp jobPattern = RegExp(r'Job:\s*([A-Z0-9]+-[0-9]+)', caseSensitive: false);
+
+    for (int i = 1; i <= totalPages; i++) {
+      final text = await _extractTextFromPage(filePath, i);
+      if (text != null && text.isNotEmpty) {
+        final match = jobPattern.firstMatch(text);
+        if (match != null) {
+          final jobNumber = match.group(1)!;
+          debugPrint("Job encontrado en página $i: $jobNumber");
+
+          // Si hay un job anterior, actualizar su página final
+          if (jobRanges.isNotEmpty) {
+            jobRanges.last.endPage = i - 1;
+          }
+
+          // Crear nuevo rango de job
+          jobRanges.add(JobRange(jobNumber, i, totalPages));
+        }
+      }
+    }
+
+    if (jobRanges.isEmpty) {
+      debugPrint("No se encontraron jobs. Se procesará como un solo documento.");
+      jobRanges.add(JobRange("DOCUMENTO_COMPLETO", 1, totalPages));
+    }
+
+    // Mostrar resumen de jobs encontrados
+    for (var job in jobRanges) {
+      debugPrint("Job: ${job.jobNumber} - Páginas: ${job.startPage} a ${job.endPage}");
+    }
+
+    return jobRanges;
+  }
+
   Future<void> _processFile(String filePath) async {
     if (!filePath.toLowerCase().endsWith('.pdf')) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -88,20 +148,37 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       final pdf.PdfFont boldFont =
           pdf.PdfStandardFont(pdf.PdfFontFamily.helvetica, 10, style: pdf.PdfFontStyle.bold);
 
-      for (int i = document.pages.count - 1; i >= 0; i--) {
-        final page = document.pages[i];
+      // Encontrar rangos de jobs
+      final jobRanges = await _findJobRanges(filePath, document.pages.count);
+
+      // Procesar en orden inverso para mantener índices correctos al insertar páginas
+      int pageOffset = 0; // Para ajustar índices después de inserciones
+
+      for (int jobIndex = jobRanges.length - 1; jobIndex >= 0; jobIndex--) {
+        final job = jobRanges[jobIndex];
+        final lastPageIndex = job.endPage - 1 + pageOffset; // Ajustar por inserciones previas
+
+        if (lastPageIndex >= document.pages.count) continue;
+
+        final page = document.pages[lastPageIndex];
         final pageSize = Size(page.size.width, page.size.height);
 
-        if (await _isAreaOccupied(filePath, i + 1, pageSize)) {
-          final pdf.PdfPage newPage = document.pages.insert(i + 1, page.size);
+        debugPrint("Procesando última página del Job ${job.jobNumber}: página ${lastPageIndex + 1}");
+
+        if (await _isAreaOccupied(filePath, job.endPage, pageSize)) {
+          debugPrint("Área ocupada, insertando nueva página para Job ${job.jobNumber}");
+          final pdf.PdfPage newPage = document.pages.insert(lastPageIndex + 1, page.size);
           final newPageSize = Size(newPage.getClientSize().width, newPage.getClientSize().height);
 
           // Copiar encabezado de la página original
-          await _copyHeaderToNewPage(filePath, i + 1, newPage, newPageSize);
+          await _copyHeaderToNewPage(filePath, job.endPage, newPage, newPageSize);
 
           // Dibujar tabla en la nueva hoja
           _drawFooter(newPage.graphics, newPageSize, font, boldFont);
+
+          pageOffset++; // Incrementar offset por la página insertada
         } else {
+          debugPrint("Área libre, agregando tabla en la misma página para Job ${job.jobNumber}");
           _drawFooter(page.graphics, pageSize, font, boldFont);
         }
       }
@@ -117,6 +194,9 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       await file.writeAsBytes(newPdfBytes);
 
       if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('PDF procesado: ${jobRanges.length} job(s) encontrado(s)')),
+        );
         OpenFile.open(path);
       }
     } catch (e, s) {
