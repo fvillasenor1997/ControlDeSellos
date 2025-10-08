@@ -16,7 +16,7 @@ import 'config_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await ConfigService().init();
+  // Se eliminó la llamada a ConfigService().init() ya que no existe y no es necesaria.
   runApp(const SelladoApp());
 }
 
@@ -120,11 +120,11 @@ class _SelladoHomePageState extends State<SelladoHomePage> {
 
     for (int i = 1; i <= pdfDoc.pagesCount; i++) {
       final page = await pdfDoc.getPage(i);
-      final text = await page.renderText();
+      final text = await page.text; // CORREGIDO: Reemplaza renderText() con .text
       await page.close();
 
       // Buscar patrón "Job: M000102269-0000"
-      final match = RegExp(r'Job\s*:\s*([A-Za-z0-9\-_.]+)', caseSensitive: false).firstMatch(text);
+      final match = RegExp(r'Job\s*:\s*([A-Za-z0-9\-_.]+)', caseSensitive: false).firstMatch(text ?? '');
       if (match != null) {
         if (currentJob.isNotEmpty && currentJobCode != null) {
           jobRanges.add({
@@ -171,12 +171,12 @@ class _SelladoHomePageState extends State<SelladoHomePage> {
   Future<bool> _isAreaOccupied(String filePath, int pageNumber, Size pageSize) async {
     final pdfDoc = await pdfx.PdfDocument.openFile(filePath);
     final page = await pdfDoc.getPage(pageNumber);
-    final text = await page.renderText();
+    final text = await page.text; // CORREGIDO: Reemplaza renderText() con .text
     await page.close();
     await pdfDoc.close();
 
     final footerArea = Rect.fromLTWH(0, pageSize.height - 100, pageSize.width, 100);
-    final lowerText = text.toLowerCase();
+    final lowerText = (text ?? '').toLowerCase();
 
     return lowerText.contains("firma") || lowerText.contains("sello");
   }
@@ -188,7 +188,7 @@ class _SelladoHomePageState extends State<SelladoHomePage> {
 
     final pageImage = await srcPage.render(
       width: pageSize.width.toInt(),
-      height: 150,
+      height: 150.0, // CORREGIDO: El tipo de argumento debe ser double.
       format: pdfx.PdfPageImageFormat.png,
     );
     await srcPage.close();
@@ -215,11 +215,15 @@ class _SelladoHomePageState extends State<SelladoHomePage> {
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () async {
+              final initialConfig = await ConfigService().loadConfig();
               final updated = await Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const ConfigScreen()),
+                MaterialPageRoute(builder: (_) => ConfigScreen(initialConfig: initialConfig)), // CORREGIDO: Se pasa el parámetro requerido
               );
-              if (updated == true) setState(() {});
+              if (updated is ConfigModel) {
+                await ConfigService().saveConfig(updated); // Se guarda la configuración actualizada
+                setState(() {});
+              }
             },
           ),
         ],
