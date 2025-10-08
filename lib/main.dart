@@ -66,7 +66,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
 
     for (int i = 1; i <= pdfDoc.pagesCount; i++) {
       final page = await pdfDoc.getPage(i);
-      final text = await page.text;
+      final text = await page.renderText();
       await page.close();
 
       if (text.contains("Job:")) {
