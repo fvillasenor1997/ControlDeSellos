@@ -77,15 +77,23 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     }
   }
 
-  /// Extrae el texto de una página usando pdfx
+  /// Extrae el texto de una página usando syncfusion
   Future<String?> _extractTextFromPage(String filePath, int pageNumber) async {
     try {
-      final pdfDoc = await pdfx.PdfDocument.openFile(filePath);
-      final page = await pdfDoc.getPage(pageNumber);
-      final textContent = await page.getText();
-      await page.close();
-      await pdfDoc.close();
-      return textContent;
+      final pdfBytes = await File(filePath).readAsBytes();
+      final pdf.PdfDocument document = pdf.PdfDocument(inputBytes: pdfBytes);
+      
+      if (pageNumber > document.pages.count || pageNumber < 1) {
+        document.dispose();
+        return null;
+      }
+
+      final pdf.PdfPage page = document.pages[pageNumber - 1];
+      final pdf.PdfTextExtractor extractor = pdf.PdfTextExtractor(document);
+      final String text = extractor.extractText(startPageIndex: pageNumber - 1, endPageIndex: pageNumber - 1);
+      
+      document.dispose();
+      return text;
     } catch (e) {
       debugPrint("Error extrayendo texto de página $pageNumber: $e");
       return null;
