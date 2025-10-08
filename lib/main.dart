@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'dart:ui'; // Para usar Size, Rect, Offset
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -58,6 +58,34 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     setState(() {});
   }
 
+  /// 🔍 Detectar los rangos de páginas de cada "Job:"
+  Future<List<List<int>>> _findJobRanges(String filePath) async {
+    final pdfDoc = await pdfx.PdfDocument.openFile(filePath);
+    final List<List<int>> jobRanges = [];
+    List<int> currentJob = [];
+
+    for (int i = 1; i <= pdfDoc.pagesCount; i++) {
+      final page = await pdfDoc.getPage(i);
+      final text = await page.text;
+      await page.close();
+
+      if (text.contains("Job:")) {
+        if (currentJob.isNotEmpty) {
+          jobRanges.add(List.from(currentJob));
+          currentJob.clear();
+        }
+      }
+      currentJob.add(i);
+    }
+
+    if (currentJob.isNotEmpty) {
+      jobRanges.add(currentJob);
+    }
+
+    await pdfDoc.close();
+    return jobRanges;
+  }
+
   Future<void> _pickAndProcessPdf() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -77,32 +105,43 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
       final pdfBytes = await File(filePath).readAsBytes();
       final pdf.PdfDocument document = pdf.PdfDocument(inputBytes: pdfBytes);
       final pdf.PdfFont font = pdf.PdfStandardFont(pdf.PdfFontFamily.helvetica, 9);
-      final pdf.PdfFont boldFont =
-          pdf.PdfStandardFont(pdf.PdfFontFamily.helvetica, 10, style: pdf.PdfFontStyle.bold);
+      final pdf.PdfFont boldFont = pdf.PdfStandardFont(
+        pdf.PdfFontFamily.helvetica,
+        10,
+        style: pdf.PdfFontStyle.bold,
+      );
 
-      for (int i = document.pages.count - 1; i >= 0; i--) {
-        final page = document.pages[i];
+      // 🔍 Detectar todos los "Jobs:" en el documento
+      final jobRanges = await _findJobRanges(filePath);
+      debugPrint("Jobs detectados: ${jobRanges.length}");
+
+      for (final job in jobRanges) {
+        final int lastPageIndex = job.last - 1; // índice base 0
+        final page = document.pages[lastPageIndex];
         final pageSize = Size(page.size.width, page.size.height);
 
-        if (await _isAreaOccupied(filePath, i + 1, pageSize)) {
-          final pdf.PdfPage newPage = document.pages.insert(i + 1, page.size);
+        // Verificar si hay superposición en la última página del job
+        if (await _isAreaOccupied(filePath, job.last, pageSize)) {
+          // Crear nueva hoja
+          final pdf.PdfPage newPage = document.pages.insert(lastPageIndex + 1, page.size);
           final newPageSize = Size(newPage.getClientSize().width, newPage.getClientSize().height);
 
-          // Copiar encabezado de la página original
-          await _copyHeaderToNewPage(filePath, i + 1, newPage, newPageSize);
+          // Copiar encabezado desde la primera hoja del job
+          await _copyHeaderToNewPage(filePath, job.first, newPage, newPageSize);
 
           // Dibujar tabla en la nueva hoja
           _drawFooter(newPage.graphics, newPageSize, font, boldFont);
+          debugPrint("Nueva hoja creada para Job ${jobRanges.indexOf(job) + 1}");
         } else {
+          // Dibujar tabla en la última hoja del job
           _drawFooter(page.graphics, pageSize, font, boldFont);
+          debugPrint("Tabla insertada en última hoja de Job ${jobRanges.indexOf(job) + 1}");
         }
       }
 
@@ -134,7 +173,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     }
   }
 
-  /// Copiar encabezado desde la página original a la nueva
+  /// Copiar encabezado desde la primera hoja del job a la nueva hoja
   Future<void> _copyHeaderToNewPage(
       String filePath, int pageNumber, pdf.PdfPage newPage, Size pageSize) async {
     try {
@@ -155,10 +194,8 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
       final img.Image? image = img.decodeImage(pageImage.bytes);
       if (image == null) return;
 
-      // Altura de encabezado desde configuración
       final int headerHeight = _config.copiedHeaderHeight.toInt();
 
-      // Recortamos la parte superior de la página (encabezado)
       final img.Image headerCrop = img.copyCrop(
         image,
         x: 0,
@@ -167,7 +204,6 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
         height: headerHeight,
       );
 
-      // Convertimos a PNG
       final headerBytes = img.encodePng(headerCrop);
       final pdf.PdfBitmap headerBitmap = pdf.PdfBitmap(headerBytes);
 
@@ -175,7 +211,7 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
         headerBitmap,
         Rect.fromLTWH(
           0,
-          20, // margen superior
+          72, // margen superior ~2.5 cm
           pageSize.width,
           headerHeight.toDouble(),
         ),
@@ -243,14 +279,14 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
           if ((pixel.r < 250 || pixel.g < 250 || pixel.b < 250) && pixel.a > 10) {
             nonWhitePixelCount++;
             if (nonWhitePixelCount > pixelThreshold) {
-              debugPrint("Superposición detectada en página $pageNumber por análisis de píxeles.");
+              debugPrint("Superposición detectada en página $pageNumber.");
               return true;
             }
           }
         }
       }
     } catch (e, s) {
-      debugPrint("Error durante el análisis de imagen de la página $pageNumber: $e");
+      debugPrint("Error durante análisis de página $pageNumber: $e");
       debugPrint(s.toString());
       return false;
     }
@@ -360,7 +396,6 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
     final processedText = text.replaceAll('\t', '    ');
 
     Rect cellBounds = Rect.fromLTWH(cellX, cellY, cellWidth, cellHeight);
-
     Rect paddedBounds = Rect.fromLTWH(cellBounds.left + hPadding, cellBounds.top + vPadding,
         cellBounds.width - (hPadding * 2), cellBounds.height - (vPadding * 2));
 
@@ -450,38 +485,32 @@ class _PdfProcessingScreenState extends State<PdfProcessingScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 40.0),
-                        child: LinearProgressIndicator(),
-                      ),
-                      SizedBox(height: 20),
-                      Text("Procesando PDF..."),
+                      CircularProgressIndicator(),
+                      SizedBox(height: 16),
+                      Text('Procesando archivo...'),
                     ],
                   ),
                 )
-              : const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.cloud_upload_outlined, size: 80, color: Colors.grey),
-                        SizedBox(height: 16),
-                        Text(
-                          'Arrastra y suelta un archivo PDF aquí o presiona el botón para seleccionarlo.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 16),
-                        ),
-                      ],
-                    ),
+              : Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.picture_as_pdf, size: 80, color: Colors.indigo),
+                      const SizedBox(height: 20),
+                      ElevatedButton.icon(
+                        onPressed: _pickAndProcessPdf,
+                        icon: const Icon(Icons.upload_file),
+                        label: const Text('Seleccionar archivo PDF'),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'O arrastra un archivo PDF aquí',
+                        style: TextStyle(color: Colors.black54),
+                      ),
+                    ],
                   ),
                 ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _isLoading ? null : _pickAndProcessPdf,
-        label: const Text('Seleccionar PDF'),
-        icon: const Icon(Icons.picture_as_pdf),
       ),
     );
   }
