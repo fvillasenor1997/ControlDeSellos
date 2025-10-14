@@ -42,8 +42,10 @@ msix_config:
   display_name: ControlDeSellos
   publisher_display_name: fvsoftremsolucion
   identity_name: fvsoftremsolucion.ControlDeSellos
-  publisher: CN=299D70E9-BB6D-4508-AD59-899C22E7C9C9 # <-- CAMBIAR
+  publisher: "CN=299D70E9-BB6D-4508-AD59-899C22E7C9C9"
   msix_version: 1.0.0.1
   logo_path: windows/runner/resources/app_icon.ico
-  store: true # <-- MUY IMPORTANTE para la tienda
+  store: true
+  # ---- LÍNEA CLAVE AÑADIDA ----
+  # Especifica la ruta correcta de los archivos de compilación de Windows.
   build_windows_path: build/windows/x64/runner/Release
