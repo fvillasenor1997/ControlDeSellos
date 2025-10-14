@@ -46,4 +46,4 @@ msix_config:
   msix_version: 1.0.0.0
   store: true
   # IMPORTANTE: Agrega esta línea para especificar la ruta correcta
-  output_path: build/windows/x64/runner/Release
+  build_directory_path: build/windows/x64/runner/Release
