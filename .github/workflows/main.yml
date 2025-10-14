@@ -57,4 +57,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: controldesellos-msix-store-package
-          path: build/windows/x64/runner/Release/*.msix
+          path: |
+            build/**/*.msix
