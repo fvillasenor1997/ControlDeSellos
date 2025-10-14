@@ -1,55 +1,44 @@
-# Nombre del workflow que aparecerá en la pestaña "Actions" de GitHub
+# .github/workflows/main.yml
+
 name: Build Windows MSIX for Microsoft Store
 
-# Define cuándo se ejecutará este workflow
 on:
-  # Se ejecuta cada vez que haces un "push" a la rama "main"
   push:
     branches: [ "main" ]
-  # También permite ejecutarlo manualmente desde la pestaña Actions
   workflow_dispatch:
 
 jobs:
   build:
-    # El workflow se ejecutará en una máquina virtual de Windows proporcionada por GitHub
     runs-on: windows-latest
 
     steps:
-      # 1. Descarga el código de tu repositorio
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Configura Java (a veces requerido por dependencias de Flutter)
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # 3. Configura Flutter en la máquina virtual
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
 
-      # 4. Instala las dependencias del proyecto (incluyendo el paquete msix)
       - name: Install dependencies
         run: flutter pub get
 
-      # 5. Compila el ejecutable de Windows en modo release
       - name: Build Windows EXE
         run: flutter build windows --release
 
-      # 6. Crea el paquete MSIX para la tienda (CON LA RUTA CORREGIDA)
-      #    Añadimos el argumento --build-windows-path para apuntar a la carpeta correcta
+      # --- COMANDO SIMPLIFICADO Y CORRECTO ---
+      # Ya no necesita argumentos extra, toda la info está en pubspec.yaml
       - name: Create MSIX package for Store
-        run: flutter pub run msix:create --store --build-windows-path "build/windows/x64/runner/Release"
+        run: flutter pub run msix:create --store
 
-      # 7. Sube el paquete MSIX como un artefacto
       - name: Upload MSIX build artifact
         uses: actions/upload-artifact@v4
         with:
-          # Nombre del archivo que podrás descargar
           name: controldesellos-msix-store-package
-          # Ruta a la carpeta que contiene el .msix
           path: build/windows/msix/*.msix
