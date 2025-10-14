@@ -6,7 +6,7 @@ on:
   # Se ejecuta cada vez que haces un "push" a la rama "main"
   push:
     branches: [ "main" ]
-  # También permite ejecutarlo manually desde la pestaña Actions
+  # También permite ejecutarlo manualmente desde la pestaña Actions
   workflow_dispatch:
 
 jobs:
@@ -36,17 +36,16 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # 5. Compila el ejecutable de Windows en modo release (necesario para el paquete)
+      # 5. Compila el ejecutable de Windows en modo release
       - name: Build Windows EXE
         run: flutter build windows --release
 
-      # 6. Crea el paquete MSIX para la tienda
-      #    Este comando utiliza la configuración de tu pubspec.yaml
+      # 6. Crea el paquete MSIX para la tienda (CON LA RUTA CORREGIDA)
+      #    Añadimos el argumento --build-windows-path para apuntar a la carpeta correcta
       - name: Create MSIX package for Store
-        run: flutter pub run msix:create --store
+        run: flutter pub run msix:create --store --build-windows-path "build/windows/x64/runner/Release"
 
       # 7. Sube el paquete MSIX como un artefacto
-      #    Esto toma el archivo .msix generado y lo sube como artefacto descargable.
       - name: Upload MSIX build artifact
         uses: actions/upload-artifact@v4
         with:
