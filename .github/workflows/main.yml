@@ -28,7 +28,6 @@ jobs:
       - name: Build Windows EXE
         run: flutter build windows --release
       
-      # NUEVO: Verificar que los archivos de compilación existen
       - name: Verify build output
         run: |
           if (Test-Path "build/windows/x64/runner/Release/controldesellos.exe") {
@@ -40,7 +39,17 @@ jobs:
           }
         shell: pwsh
       
-      # MODIFICADO: Crear MSIX con ruta correcta
+      # NUEVO: Copiar archivos donde msix los espera
+      - name: Prepare files for MSIX
+        run: |
+          Write-Host "Creating directory structure..."
+          New-Item -Path "build/windows/runner/Release" -ItemType Directory -Force
+          Write-Host "Copying build files..."
+          Copy-Item -Path "build/windows/x64/runner/Release/*" -Destination "build/windows/runner/Release/" -Recurse -Force
+          Write-Host "✓ Files copied successfully"
+          dir build/windows/runner/Release
+        shell: pwsh
+      
       - name: Create MSIX package for Store
         run: flutter pub run msix:create --store
       
