@@ -42,7 +42,7 @@ msix_config:
   display_name: ControlDeSellos
   publisher_display_name: fvsoftremsolucion
   identity_name: fvsoftremsolucion.ControlDeSellos
-  publisher: fvillasenor190297@hotmail.com, CN=299D70E9-BB6D-4508-AD59-899C22E7C9C9 # <-- CAMBIAR
+  publisher: CN=299D70E9-BB6D-4508-AD59-899C22E7C9C9 # <-- CAMBIAR
   msix_version: 1.0.0.1
   logo_path: windows/runner/resources/app_icon.ico
   store: true # <-- MUY IMPORTANTE para la tienda
