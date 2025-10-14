@@ -46,3 +46,4 @@ msix_config:
   msix_version: 1.0.0.1
   logo_path: windows/runner/resources/app_icon.ico
   store: true # <-- MUY IMPORTANTE para la tienda
+  build_windows_path: build/windows/x64/runner/Release
