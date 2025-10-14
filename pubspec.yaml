@@ -48,4 +48,4 @@ msix_config:
   store: true
   # ---- LÍNEA CLAVE AÑADIDA ----
   # Especifica la ruta correcta de los archivos de compilación de Windows.
-  build_windows_path: build\windows\x64\runner\Release
+  build_windows_path: build/windows/x64/runner/Release
