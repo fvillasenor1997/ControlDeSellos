@@ -32,8 +32,7 @@ jobs:
       - name: Build Windows EXE
         run: flutter build windows --release
 
-      # --- COMANDO SIMPLIFICADO Y CORRECTO ---
-      # Ya no necesita argumentos extra, toda la info está en pubspec.yaml
+      # --- ESTE ES EL COMANDO CORREGIDO Y SIMPLIFICADO ---
       - name: Create MSIX package for Store
         run: flutter pub run msix:create --store
 
