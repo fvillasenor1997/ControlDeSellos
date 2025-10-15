@@ -1,46 +1,33 @@
-# .github/workflows/main.yml
-name: Build Windows MSIX for Microsoft Store
+name: Build Windows App
+
 on:
   push:
-    branches: [ "main" ]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: windows-latest
+    
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-      
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-      
-      - name: Install dependencies
-        run: flutter pub get
-      
-      - name: Build Windows EXE
-        run: flutter build windows --release
-      
-      # VUELVE A AGREGAR ESTE PASO
-      - name: Prepare files for MSIX
-        run: |
-          New-Item -Path "build/windows/runner/Release" -ItemType Directory -Force
-          Copy-Item -Path "build/windows/x64/runner/Release/*" -Destination "build/windows/runner/Release/" -Recurse -Force
-        shell: pwsh
-      
-      - name: Create MSIX package for Store
-        run: flutter pub run msix:create --store
-      
-      - name: Upload MSIX build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: controldesellos-msix-store-package
-          path: build/**/*.msix
+    - uses: actions/checkout@v4
+    
+    - uses: subosito/flutter-action@v2
+      with:
+        channel: 'stable'
+    
+    - run: flutter pub get
+    
+    - run: flutter pub run flutter_launcher_icons
+    
+    - run: flutter build windows --release
+    
+    - name: Create MSIX
+      run: |
+        dart pub global activate msix
+        dart pub global run msix:create
+    
+    - uses: actions/upload-artifact@v4
+      with:
+        name: windows-app
+        path: build/windows/x64/runner/Release/*.msix
