@@ -4,6 +4,7 @@ on:
   push:
     branches: [ "main" ]
   workflow_dispatch:
+
 jobs:
   build:
     runs-on: windows-latest
@@ -28,27 +29,8 @@ jobs:
       - name: Build Windows EXE
         run: flutter build windows --release
       
-      - name: Verify build output
-        run: |
-          if (Test-Path "build/windows/x64/runner/Release/controldesellos.exe") {
-            Write-Host "✓ EXE file found successfully"
-            dir build/windows/x64/runner/Release
-          } else {
-            Write-Host "✗ ERROR: EXE file NOT found"
-            exit 1
-          }
-        shell: pwsh
-      
-      # NUEVO: Copiar archivos donde msix los espera
-      - name: Prepare files for MSIX
-        run: |
-          Write-Host "Creating directory structure..."
-          New-Item -Path "build/windows/runner/Release" -ItemType Directory -Force
-          Write-Host "Copying build files..."
-          Copy-Item -Path "build/windows/x64/runner/Release/*" -Destination "build/windows/runner/Release/" -Recurse -Force
-          Write-Host "✓ Files copied successfully"
-          dir build/windows/runner/Release
-        shell: pwsh
+      # PASO REDUNDANTE ELIMINADO
+      # No necesitas el paso "Prepare files for MSIX"
       
       - name: Create MSIX package for Store
         run: flutter pub run msix:create --store
@@ -57,5 +39,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: controldesellos-msix-store-package
-          path: |
-            build/**/*.msix
+          path: build/windows/x64/runner/Release/*.msix
