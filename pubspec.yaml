@@ -9,23 +9,18 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
   # PDF
   syncfusion_flutter_pdf: ^26.1.35
   syncfusion_flutter_core: ^26.1.35
   shared_preferences: ^2.0.15
-  pdfx: ^2.5.0          # <--- AÑADIR ESTA LÍNEA
-  image: ^4.0.17        # <--- AÑADIR ESTA LÍNEA
-
+  pdfx: ^2.5.0
+  image: ^4.0.17
   # Selección de archivos
   file_picker: 
-
   # Guardar archivos en dispositivo
   path_provider: ^2.0.11
-
   # Abrir archivos
   open_file: ^3.5.4
-
   # Arrastrar y soltar
   desktop_drop: ^0.4.4
 
@@ -36,31 +31,24 @@ dev_dependencies:
   msix: ^2.1.1
   flutter_launcher_icons: ^0.13.1
 
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/icon/
+
 flutter_launcher_icons:
   windows:
     generate: true
     image_path: "assets/icon/icon.png"
     icon_size: 256
 
-flutter:
-  assets:
-    - assets/icon/
-
-flutter:
-  uses-material-design: true
-  
 msix_config:
   display_name: ControldeSellos
   publisher_display_name: fvsoftremsolucion
   identity_name: fvsoftremsolucion.controldesellos
   publisher: CN=299D70E9-BB6D-4508-AD59-899C22E7C9C9
-
-  # LÍNEA IMPORTANTE QUE FALTA:
-  logo_path: windows/runner/resources/app_icon.ico
-
-  # BUENA PRÁCTICA: Evita que se añada un fondo de color al ícono.
+  logo_path: assets/icon/icon.png
   icons_background_color: transparent
-
-  msix_version: 1.0.0.0
+  msix_version: 1.0.1.0
   store: true
   build_directory_path: build/windows/x64/runner/Release
