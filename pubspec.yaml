@@ -43,8 +43,13 @@ msix_config:
   publisher_display_name: fvsoftremsolucion
   identity_name: fvsoftremsolucion.controldesellos
   publisher: CN=299D70E9-BB6D-4508-AD59-899C22E7C9C9
+
+  # LÍNEA IMPORTANTE QUE FALTA:
+  logo_path: windows/runner/resources/app_icon.ico
+
+  # BUENA PRÁCTICA: Evita que se añada un fondo de color al ícono.
+  icons_background_color: transparent
+
   msix_version: 1.0.0.0
   store: true
-  # IMPORTANTE: Agrega esta línea para especificar la ruta correcta
-  logo_path: windows/runner/resources/app_icon.ico
   build_directory_path: build/windows/x64/runner/Release
