@@ -29,8 +29,12 @@ jobs:
       - name: Build Windows EXE
         run: flutter build windows --release
       
-      # PASO REDUNDANTE ELIMINADO
-      # No necesitas el paso "Prepare files for MSIX"
+      # VUELVE A AGREGAR ESTE PASO
+      - name: Prepare files for MSIX
+        run: |
+          New-Item -Path "build/windows/runner/Release" -ItemType Directory -Force
+          Copy-Item -Path "build/windows/x64/runner/Release/*" -Destination "build/windows/runner/Release/" -Recurse -Force
+        shell: pwsh
       
       - name: Create MSIX package for Store
         run: flutter pub run msix:create --store
@@ -39,4 +43,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: controldesellos-msix-store-package
-          path: build/windows/x64/runner/Release/*.msix
+          path: build/**/*.msix
