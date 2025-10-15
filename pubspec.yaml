@@ -46,4 +46,5 @@ msix_config:
   msix_version: 1.0.0.0
   store: true
   # IMPORTANTE: Agrega esta línea para especificar la ruta correcta
+  logo_path: windows/runner/resources/app_icon.ico
   build_directory_path: build/windows/x64/runner/Release
